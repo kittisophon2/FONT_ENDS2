@@ -1,35 +1,35 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
-import BookService from "../Services/Book.service";
+import { ChevronLeft, ChevronRight, Star, ShoppingCart } from "lucide-react"; // ✅ เพิ่ม ShoppingCart ตรงนี้
+import ProductService from "../Services/Product.service";
 import ReadingListService from "../Services/ReadingList.service";
 import Layout from "../components/Layout";
 import UserService from "../Services/User.service";
 import { jwtDecode } from "jwt-decode";
 import http from "../http-common";
+import CartService from "../Services/Cart.service"; // ✅ Import Service
+
 const Content = () => {
-  const { id } = useParams(); // ดึง book_id จาก URL
+  const { id } = useParams();
   const [book, setBook] = useState(null);
   const [topBooks, setTopBooks] = useState([]);
   const [currentIndex2, setCurrentIndex2] = useState(0);
   const [user, setUser] = useState(null);
-  const [reviews, setReviews] = useState([]); // 📌 เก็บรีวิว
-  const [newComment, setNewComment] = useState(""); // 📌 เก็บคอมเมนต์ที่พิมพ์
-  const [selectedRating, setSelectedRating] = useState(0); // เก็บค่าคะแนนที่เลือก
-  const [showBookContent, setShowBookContent] = useState(false);
-  const [bookContent, setBookContent] = useState(""); // ✅ เก็บ HTML ของหนังสือ
+  const [reviews, setReviews] = useState([]);
+  const [newComment, setNewComment] = useState("");
+  const [selectedRating, setSelectedRating] = useState(0);
 
   const handleRatingSelect = (rating) => {
-    setSelectedRating(rating); // อัปเดตค่าคะแนนที่เลือก
+    setSelectedRating(rating);
   };
-  // 📌 โหลดข้อมูลหนังสือจาก API
+
   useEffect(() => {
     const fetchBookData = async () => {
       try {
-        console.log("📌 Fetching book data for ID:", id);
-        const response = await BookService.getBookById(id);
+        console.log("📌 Fetching product data for ID:", id);
+        const response = await ProductService.getProductById(id);
         setBook(response.data);
-        setReviews(response.data.reviews); // ✅ ดึงรีวิวจาก API
+        setReviews(response.data.reviews);
       } catch (error) {
         console.error("❌ Error fetching book:", error);
       }
@@ -37,7 +37,7 @@ const Content = () => {
 
     const fetchTopBooks = async () => {
       try {
-        const response = await BookService.getTopBooks();
+        const response = await ProductService.getTopProducts();
         setTopBooks(response.data);
       } catch (error) {
         console.error("❌ Error fetching top books:", error);
@@ -47,7 +47,7 @@ const Content = () => {
     fetchBookData();
     fetchTopBooks();
   }, [id]);
-  
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -65,7 +65,23 @@ const Content = () => {
     }
   };
 
-  // 📌 เพิ่มหนังสือไปยัง Reading List
+  // ✅ ฟังก์ชันเพิ่มลงตะกร้า (ส่วนที่เพิ่มใหม่)
+  const handleAddToCart = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        alert("กรุณาเข้าสู่ระบบก่อนซื้อสินค้า!");
+        return;
+      }
+      // เรียกใช้ Service เพิ่มสินค้าลงตะกร้า (จำนวน 1 ชิ้น)
+      await CartService.addToCart(id, 1);
+      alert("✅ เพิ่มลงตะกร้าเรียบร้อย!");
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      alert("❌ ไม่สามารถเพิ่มลงตะกร้าได้ (กรุณาลองใหม่)");
+    }
+  };
+
   const handleAddToReadingList = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -73,9 +89,7 @@ const Content = () => {
         alert("กรุณาเข้าสู่ระบบก่อนเพิ่มหนังสือในคลัง!");
         return;
       }
-
       console.log("✅ Sending request to add book:", id);
-
       await ReadingListService.addToReadingList(id);
       alert("✅ เพิ่มลงคลังหนังสือเรียบร้อย!");
     } catch (error) {
@@ -83,87 +97,68 @@ const Content = () => {
       alert("❌ ไม่สามารถเพิ่มลงคลังหนังสือได้!");
     }
   };
+
   const handleStartReading = async (book_id) => {
     console.log("📌 Start reading for book:", id);
     try {
-      
-  
       const readingListId = await getReadingListId(id);
       if (!readingListId) {
         throw new Error("Reading list entry not found");
       }
-  
       await ReadingListService.startReading(readingListId);
       console.log("✅ เริ่มอ่านหนังสือเรียบร้อย!");
-    } catch (error) {
-    }
+    } catch (error) {}
   };
+
   const getReadingListId = async (book_id) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("No token found");
-  
       const decoded = jwtDecode(token);
       const user_id = decoded.userId;
-  
-      if (!user_id || !book_id) {
-        throw new Error("Invalid user_id or book_id");
-      }
-  
-      console.log("User ID:", user_id); 
-      console.log("Book ID:", book_id);
-  
-      // แก้ไขการส่งข้อมูลผ่าน query parameters แทน `body`
+      if (!user_id || !book_id) throw new Error("Invalid user_id or book_id");
+
       const response = await http.get(`/readings/find/by-user-and-book`, {
-        params: { user_id, book_id }, // ใช้ params แทน body
+        params: { user_id, book_id },
         headers: { Authorization: `Bearer ${token}` },
       });
-  
-      console.log("Response from Back-end:", response.data);
-  
-      if (!response.data || !response.data.reading_id) {
+      if (!response.data || !response.data.reading_id)
         throw new Error("Reading list entry not found");
-      }
-  
       return response.data.reading_id;
     } catch (error) {
-      console.error("❌ Error fetching reading list ID:", error.response?.data || error.message);
+      console.error(
+        "❌ Error fetching reading list ID:",
+        error.response?.data || error.message
+      );
       throw error;
     }
   };
-  
+
   const handleAddReview = async (e) => {
     e.preventDefault();
-
     if (!user || !user.user_id) {
       alert("กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น");
       return;
     }
-
     if (!newComment.trim()) {
       alert("กรุณาพิมพ์ข้อความก่อนส่งความคิดเห็น");
       return;
     }
-
     if (selectedRating === 0) {
       alert("กรุณาให้คะแนนก่อนส่งความคิดเห็น");
       return;
     }
 
     try {
-      const response = await BookService.addReview(
+      const response = await ProductService.addReview(
         id,
         user.user_id,
         selectedRating,
         newComment
       );
 
-      console.log("📌 Full Response from API:", response);
-
       if (response && response.review && response.book) {
         const { review, book } = response;
-
-        // ✅ เช็กให้แน่ใจว่า review มีข้อมูล user
         if (!review.user) {
           review.user = {
             user_id: user.user_id,
@@ -172,19 +167,12 @@ const Content = () => {
             picture: user.pictureUrl,
           };
         }
-
-        console.log("✅ New Review Added:", review);
-
-        // ✅ อัปเดต state ของ reviews และ book ทันที
         setReviews((prevReviews) => [...prevReviews, review]);
-
         setBook((prevBook) => ({
           ...prevBook,
           review_count: book.review_count,
           average_rating: book.average_rating,
         }));
-      } else {
-        console.error("❌ Unexpected response format:", response);
       }
     } catch (error) {
       console.error("❌ Error adding review:", error);
@@ -194,15 +182,15 @@ const Content = () => {
       setSelectedRating(0);
     }
   };
+
   if (!book) return <p>Loading...</p>;
 
   return (
     <Layout>
       <div className="min-h-screen flex flex-col space-y-9 justify-center items-center p-6">
-        {/* 📚 แสดงข้อมูลหนังสือหลัก */}
         <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col md:flex-row max-w-4xl w-full">
           <img
-            src={book.book_photo}
+            src={book.book_photo || book.product_photo}
             alt={book.title}
             className="w-full md:w-1/3 object-cover rounded-md mb-4 md:mb-0 md:mr-6"
           />
@@ -211,30 +199,39 @@ const Content = () => {
             <p className="text-lg font-semibold mb-1">โดย {book.author}</p>
             <p className="text-gray-700 mb-4">{book.description}</p>
 
-            <div className="flex flex-col md:flex-row items-center md:items-start gap-4 mt-4">
+            {/* ส่วนปุ่มกด */}
+            <div className="flex flex-col md:flex-row items-center md:items-start gap-4 mt-4 flex-wrap">
+              {/* ✅ ปุ่มเพิ่มลงตะกร้า (ใหม่) */}
+              <button
+                onClick={handleAddToCart}
+                className="bg-orange-500 hover:bg-orange-600 text-white text-lg px-6 py-2 rounded-lg shadow-md transition-all flex items-center gap-2"
+              >
+                <ShoppingCart size={20} /> เพิ่มลงตะกร้า
+              </button>
+
               <button
                 onClick={handleAddToReadingList}
                 className="bg-blue-600 hover:bg-blue-700 text-white text-lg px-6 py-2 rounded-lg shadow-md transition-all w-full md:w-auto"
               >
                 เพิ่มลงคลังหนังสือ
               </button>
-
+              
               {book.html_content && (
                 <a
-                href={book.html_content}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() =>handleStartReading(id)}
-                className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-2 rounded-lg shadow-md transition-all w-full md:w-auto text-center"
-              >
-                อ่านหนังสือ
-              </a>
+                  href={book.html_content}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={() => handleStartReading(id)}
+                  className="bg-green-600 hover:bg-green-700 text-white text-lg px-6 py-2 rounded-lg shadow-md transition-all w-full md:w-auto text-center"
+                >
+                  อ่านหนังสือ
+                </a>
               )}
             </div>
           </div>
         </div>
 
-        {/* 🔥 หนังสือยอดนิยม */}
+        {/* Top Books Section */}
         <div className="relative overflow-hidden w-full px-4 mt-10">
           <h1 className="text-3xl font-bold ml-5 mb-4">
             🔥 หนังสือยอดนิยม ตลอดกาล
@@ -263,8 +260,6 @@ const Content = () => {
               </div>
             ))}
           </div>
-
-          {/* ปุ่มเลื่อนซ้าย-ขวา */}
           {currentIndex2 < 5 && (
             <button
               onClick={() =>
@@ -287,11 +282,9 @@ const Content = () => {
           )}
         </div>
 
-        {/* 🔥 ส่วนแสดงความคิดเห็น */}
+        {/* Review Section */}
         <div className="w-full max-w-3xl bg-white p-6 rounded-lg shadow-lg">
           <h2 className="text-xl font-bold mb-4">ความคิดเห็น</h2>
-
-          {/* ฟอร์มเพิ่มความคิดเห็น */}
           {user ? (
             <div className="flex items-start space-x-4 mb-6">
               <img
@@ -300,7 +293,7 @@ const Content = () => {
                 className="w-10 h-10 rounded-full"
               />
               <div className="flex-1">
-                <p className="font-bold">{user.username}</p> {/* ชื่อผู้งาน */}
+                <p className="font-bold">{user.username}</p>
                 <div className="flex items-center space-x-1 my-2">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <Star
@@ -338,8 +331,6 @@ const Content = () => {
               กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น
             </p>
           )}
-
-          {/* รายการความคิดเห็น */}
           <div className="space-y-4">
             {reviews.length > 0 ? (
               reviews.map((review) => (

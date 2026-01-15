@@ -1,9 +1,10 @@
 // Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Search, User, SquareLibrary, BookType, Info } from "lucide-react";
+import { Search, User, SquareLibrary, BookType, Info, ShoppingCart } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
-import BookService from "../Services/Book.service";
+// ❌ ลบอันเดิม: import BookService from "../Services/Product.service";
+import ProductService from "../Services/Product.service"; // ✅ เปลี่ยนชื่อเป็น ProductService
 import UserService from "../Services/User.service";
 
 const Navbar = () => {
@@ -14,6 +15,7 @@ const Navbar = () => {
   const [user, setUser] = useState(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
+  
   const toggleDropdown = () => {
     setIsDropdownOpen(!isDropdownOpen);
   };
@@ -24,10 +26,7 @@ const Navbar = () => {
   const categories = [
     { category_id: "67bb277d483ab08559a89753", name: "Fiction" },
     { category_id: "67bb277d483ab08559a89754", name: "Non-Fiction" },
-    {
-      category_id: "67bb277d483ab08559a89755",
-      name: "Graphic Novels & Comics",
-    },
+    { category_id: "67bb277d483ab08559a89755", name: "Graphic Novels & Comics" },
     { category_id: "67bb277d483ab08559a89756", name: "Fantasy" },
     { category_id: "67bb277d483ab08559a89757", name: "Romance" },
     { category_id: "67bb277d483ab08559a89758", name: "Business & Economics" },
@@ -36,7 +35,8 @@ const Navbar = () => {
   ];
 
   useEffect(() => {
-    BookService.getBooks()
+    // ✅ แก้ไขตรงนี้: เรียกใช้ getProducts() แทน getBooks()
+    ProductService.getProducts()
       .then((response) => setBooks(response.data))
       .catch((e) => console.log(e));
   }, []);
@@ -51,6 +51,7 @@ const Navbar = () => {
     );
     setFilteredBooks(results);
   }, [searchTerm, books]);
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -95,7 +96,8 @@ const Navbar = () => {
 
           {/* Navigation Links */}
           <div className="flex space-x-6 relative items-center">
-          <div className="relative">
+            {/* หมวดหมู่ Dropdown */}
+            <div className="relative">
               <button
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="text-gray-500 hover:text-black items-center text-2xl font-semibold transition-all duration-500 flex"
@@ -108,9 +110,9 @@ const Navbar = () => {
                     {categories.map((category) => (
                       <li key={category.category_id}>
                         <NavLink
-                          to={`/bookcategories/category/${category.category_id}`} // ✅ ใช้ category_id จาก API
+                          to={`/bookcategories/category/${category.category_id}`}
                           className="block py-2 px-4 hover:text-white hover:bg-slate-500 cursor-pointer text-sm transition-all duration-300 rounded-md"
-                          onClick={() => setIsDropdownOpen(false)} // ✅ ปิด dropdown หลังจากคลิก
+                          onClick={() => setIsDropdownOpen(false)}
                         >
                           {category.name}
                         </NavLink>
@@ -122,18 +124,20 @@ const Navbar = () => {
             </div>
 
 
-
+            {/* เมนูตะกร้าสินค้า */}
             <NavLink
-              to="/readings"
+              to="/cart"
               className={({ isActive }) =>
                 isActive
-                  ? "text-black text-2xl font-semibold "
+                  ? "text-black text-2xl font-semibold"
                   : "text-gray-500 hover:text-black text-2xl font-semibold transition-all duration-500"
               }
             >
-              <SquareLibrary size={26} className="inline-block mr-1 " />{" "}
-              คลังหนังสือ
+              <ShoppingCart size={26} className="inline-block mr-1" />{" "}
+              ตะกร้า
             </NavLink>
+
+            {/* เกี่ยวกับ */}
             <NavLink
               to="/about"
               className={({ isActive }) =>
@@ -169,7 +173,7 @@ const Navbar = () => {
                     className="flex items-center p-2 hover:bg-gray-100 transition"
                   >
                     <img
-                      src={book.book_photo}
+                      src={book.book_photo} // ตรวจสอบว่าใน DB ใช้ชื่อ book_photo หรือ product_image
                       alt={book.title}
                       className="w-10 h-14 object-cover rounded-md mr-3"
                     />
@@ -197,7 +201,6 @@ const Navbar = () => {
                 />
                 {isProfileDropdownOpen && (
                   <div className="absolute right-0 top-full mt-2 bg-white/90 backdrop-blur-md rounded-xl shadow-xl w-72 py-4 border border-gray-200 z-20">
-                    {/* User Info Section */}
                     <div className="flex items-center px-4 pb-3 border-b">
                       <img
                         src={user.pictureUrl}
@@ -214,13 +217,12 @@ const Navbar = () => {
                       </div>
                     </div>
 
-                    {/* Menu Options */}
                     <ul className="text-gray-700">
                       <li
                         className="py-3 px-5 hover:bg-gray-50 cursor-pointer flex items-center text-red-500 font-semibold rounded-md transition"
                         onClick={handleLogout}
                       >
-                         ออกจากระบบ
+                        ออกจากระบบ
                       </li>
                     </ul>
                   </div>
@@ -234,7 +236,6 @@ const Navbar = () => {
               </NavLink>
             )}
           </div>
-
         </div>
       </div>
     </nav>

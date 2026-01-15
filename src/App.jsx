@@ -8,7 +8,7 @@ import About from './pages/About'
 import Register from './pages/Register'
 import Content from './pages/Content'
 import Login from './pages/Login'
-
+import Cart from "./pages/Cart";
 
 
 const App = () => {
@@ -23,6 +23,7 @@ const App = () => {
         <Route path="/content/:id" element={<Content />} />
         <Route path="/login" element={<Login/>} />
         <Route path="/bookcategories/category/:category_id" element={<Books />} />
+        <Route path="/cart" element={<Cart />} />
        
       </Routes>
     </BrowserRouter>

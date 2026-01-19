@@ -1,62 +1,55 @@
-// Navbar.jsx
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Search, User, SquareLibrary, BookType, Info, ShoppingCart } from "lucide-react";
+import { Search, User, Monitor, Grid, Info, ShoppingCart, Cpu } from "lucide-react"; // เปลี่ยน icon
 import { jwtDecode } from "jwt-decode";
-// ❌ ลบอันเดิม: import BookService from "../Services/Product.service";
-import ProductService from "../Services/Product.service"; // ✅ เปลี่ยนชื่อเป็น ProductService
+import ProductService from "../Services/Product.service";
 import UserService from "../Services/User.service";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredBooks, setFilteredBooks] = useState([]);
-  const [books, setBooks] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]); // เปลี่ยนชื่อให้สื่อความหมาย
+  const [products, setProducts] = useState([]);
   const [user, setUser] = useState(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
-  
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
-  const toggleProfileDropdown = () => {
-    setIsProfileDropdownOpen(!isProfileDropdownOpen);
-  };
 
+  // ข้อมูลหมวดหมู่ตัวอย่างสำหรับร้าน IT (คุณควรดึงจาก API จริงๆ ถ้าทำได้)
   const categories = [
-    { category_id: "67bb277d483ab08559a89753", name: "Fiction" },
-    { category_id: "67bb277d483ab08559a89754", name: "Non-Fiction" },
-    { category_id: "67bb277d483ab08559a89755", name: "Graphic Novels & Comics" },
-    { category_id: "67bb277d483ab08559a89756", name: "Fantasy" },
-    { category_id: "67bb277d483ab08559a89757", name: "Romance" },
-    { category_id: "67bb277d483ab08559a89758", name: "Business & Economics" },
-    { category_id: "67bb277d483ab08559a89759", name: "Science Fiction" },
-    { category_id: "67bb36a914a1c18db1a6ba76", name: "Mystery" },
+    { category_id: "1", name: "Laptops & Notebooks" },
+    { category_id: "2", name: "PC Components" },
+    { category_id: "3", name: "Peripherals (Mouse/Keybaord)" },
+    { category_id: "4", name: "Monitors" },
+    { category_id: "5", name: "Accessories" },
   ];
 
   useEffect(() => {
-    // ✅ แก้ไขตรงนี้: เรียกใช้ getProducts() แทน getBooks()
     ProductService.getProducts()
-      .then((response) => setBooks(response.data))
+      .then((response) => setProducts(response.data))
       .catch((e) => console.log(e));
   }, []);
 
   useEffect(() => {
     if (searchTerm.trim() === "") {
-      setFilteredBooks([]);
+      setFilteredProducts([]);
       return;
     }
-    const results = books.filter((book) =>
-      book.title.toLowerCase().includes(searchTerm.toLowerCase())
+    const results = products.filter((product) =>
+      product.product_name?.toLowerCase().includes(searchTerm.toLowerCase())
     );
-    setFilteredBooks(results);
-  }, [searchTerm, books]);
+    setFilteredProducts(results);
+  }, [searchTerm, products]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      const decoded = jwtDecode(token);
-      fetchUserData(decoded.userId);
+      try {
+        const decoded = jwtDecode(token);
+        // เช็ค field id จาก token ว่าชื่อ userId หรือ user_id ให้ตรงกับ backend
+        fetchUserData(decoded.userId || decoded.user_id); 
+      } catch (error) {
+        console.error("Invalid token");
+      }
     }
   }, []);
 
@@ -75,164 +68,149 @@ const Navbar = () => {
     navigate("/login");
   };
 
+  const toggleProfileDropdown = () => setIsProfileDropdownOpen(!isProfileDropdownOpen);
+
   return (
-    <nav className="bg-[#F4FCF9] p-2 shadow-md">
-      <div className="flex ml-32 items-center">
-        <div className="container mx-auto flex items-center justify-between w-full">
-          {/* Logo */}
-          <div className="text-black font-medium text-xl flex items-center">
+    <nav className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200 shadow-sm">
+      <div className="container mx-auto px-4 lg:px-8 py-3">
+        <div className="flex items-center justify-between">
+          
+          {/* Logo Section */}
+          <NavLink to="/" className="flex items-center space-x-2 group">
+             {/* เปลี่ยนรูป logo เป็นของร้าน IT หรือใช้ icon แทนชั่วคราว */}
+             <div className="bg-primary p-2 rounded-lg text-white">
+                <Cpu size={28} />
+             </div>
+             <h1 className="text-2xl font-bold text-secondary tracking-tight group-hover:text-primary transition-colors">
+               IT Store
+             </h1>
+          </NavLink>
+
+          {/* Main Navigation */}
+          <div className="hidden md:flex items-center space-x-8">
+            
+            {/* หมวดหมู่ Dropdown */}
+            <div className="relative group">
+              <button
+                className="flex items-center text-gray-600 hover:text-primary font-medium transition-colors py-2"
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+              >
+                <Grid size={20} className="mr-2" /> หมวดหมู่สินค้า
+              </button>
+              
+              {/* Dropdown Menu */}
+              <div className={`absolute left-0 mt-0 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 origin-top-left ${isDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible group-hover:opacity-100 group-hover:scale-100 group-hover:visible'}`}>
+                <ul className="py-2">
+                  {categories.map((category) => (
+                    <li key={category.category_id}>
+                      <NavLink
+                        to={`/bookcategories/category/${category.category_id}`} // อาจต้องเปลี่ยน path เป็น /categories/...
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors"
+                        onClick={() => setIsDropdownOpen(false)}
+                      >
+                        {category.name}
+                      </NavLink>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
             <NavLink
-              to="/"
+              to="/cart"
               className={({ isActive }) =>
-                isActive
-                  ? "text-black font-bold"
-                  : "text-gray-700 hover:text-black"
+                `flex items-center font-medium transition-colors ${isActive ? "text-primary" : "text-gray-600 hover:text-primary"}`
               }
             >
-              <img src="/pic/gogo.png" alt="BookTree" className="h-16" />
-              <h1 className="font-medium logo text-lg">BookTree</h1>
+              <ShoppingCart size={20} className="mr-2" /> ตะกร้า
+            </NavLink>
+
+            <NavLink
+              to="/about"
+              className={({ isActive }) =>
+                `flex items-center font-medium transition-colors ${isActive ? "text-primary" : "text-gray-600 hover:text-primary"}`
+              }
+            >
+              <Info size={20} className="mr-2" /> เกี่ยวกับเรา
             </NavLink>
           </div>
 
-          {/* Navigation Links */}
-          <div className="flex space-x-6 relative items-center">
-            {/* หมวดหมู่ Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                className="text-gray-500 hover:text-black items-center text-2xl font-semibold transition-all duration-500 flex"
-              >
-                <BookType size={26} className="inline-block mr-1" /> หมวดหมู่
-              </button>
-              {isDropdownOpen && (
-                <div className="absolute left-0 mt-2 bg-white rounded-md shadow-lg z-10 py-2 border border-gray-200 w-48">
-                  <ul className="grid grid-cols-1 gap-1 text-gray-700">
-                    {categories.map((category) => (
-                      <li key={category.category_id}>
-                        <NavLink
-                          to={`/bookcategories/category/${category.category_id}`}
-                          className="block py-2 px-4 hover:text-white hover:bg-slate-500 cursor-pointer text-sm transition-all duration-300 rounded-md"
-                          onClick={() => setIsDropdownOpen(false)}
-                        >
-                          {category.name}
-                        </NavLink>
-                      </li>
-                    ))}
-                  </ul>
+          {/* Search & User Section */}
+          <div className="flex items-center space-x-4">
+            
+            {/* Search Bar */}
+            <div className="relative hidden lg:block">
+              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-full border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-64">
+                <Search size={18} className="text-gray-400 mr-2" />
+                <input
+                  type="text"
+                  placeholder="ค้นหาสินค้า..."
+                  className="bg-transparent outline-none text-sm text-gray-700 w-full placeholder-gray-400"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+
+              {/* Search Results */}
+              {filteredProducts.length > 0 && (
+                <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-80 overflow-y-auto">
+                  {filteredProducts.map((product) => (
+                    <NavLink
+                      key={product._id} // Prisma ใช้ _id หรือ product_id เช็คให้ดีครับ (Schema บอก product_id map เป็น _id)
+                      to={`/content/${product._id}`}
+                      className="flex items-center p-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-none"
+                    >
+                      <img
+                        src={product.product_image || "https://placehold.co/100"} // ใช้ field จาก schema
+                        alt={product.product_name}
+                        className="w-10 h-10 object-cover rounded-md mr-3 border"
+                      />
+                      <div className="overflow-hidden">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {product.product_name}
+                        </h3>
+                        <p className="text-xs text-primary font-bold">฿{product.price?.toLocaleString()}</p>
+                      </div>
+                    </NavLink>
+                  ))}
                 </div>
               )}
             </div>
 
-
-            {/* เมนูตะกร้าสินค้า */}
-            <NavLink
-              to="/cart"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-black text-2xl font-semibold"
-                  : "text-gray-500 hover:text-black text-2xl font-semibold transition-all duration-500"
-              }
-            >
-              <ShoppingCart size={26} className="inline-block mr-1" />{" "}
-              ตะกร้า
-            </NavLink>
-
-            {/* เกี่ยวกับ */}
-            <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                isActive
-                  ? "text-black text-2xl font-semibold"
-                  : "text-gray-500 hover:text-black text-2xl font-semibold transition-all duration-500"
-              }
-            >
-              <Info size={26} className="inline-block mr-1 " /> เกี่ยวกับ
-            </NavLink>
-          </div>
-
-          {/* Search Bar */}
-          <div className="relative w-60 items-center flex flex-col">
-            <div className="flex items-center bg-white px-3 py-2 rounded-md shadow-sm w-full">
-              <input
-                type="text"
-                placeholder="ค้นหาข้อมูล"
-                className="outline-none text-sm text-gray-500 w-full"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <Search size={18} className="text-gray-500 ml-2" />
-            </div>
-
-            {/* Search Results Dropdown */}
-            {filteredBooks.length > 0 && (
-              <div className="absolute top-full left-0 w-full bg-white shadow-lg rounded-md mt-1 max-h-60 overflow-y-auto z-10">
-                {filteredBooks.map((book) => (
-                  <NavLink
-                    key={book._id}
-                    to={`/content/${book._id}`}
-                    className="flex items-center p-2 hover:bg-gray-100 transition"
-                  >
-                    <img
-                      src={book.book_photo} // ตรวจสอบว่าใน DB ใช้ชื่อ book_photo หรือ product_image
-                      alt={book.title}
-                      className="w-10 h-14 object-cover rounded-md mr-3"
-                    />
-                    <div>
-                      <h3 className="text-sm font-semibold text-gray-800">
-                        {book.title}
-                      </h3>
-                      <p className="text-xs text-gray-500">{book.author}</p>
-                    </div>
-                  </NavLink>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* User Info */}
-          <div className="relative items-center flex">
+            {/* User Profile */}
             {user ? (
-              <>
-                <img
-                  src={user.pictureUrl}
-                  alt="Profile"
-                  className="h-10 w-10 rounded-full mr-2 cursor-pointer border-2 border-gray-300 hover:border-gray-500 transition-all"
+              <div className="relative">
+                <button 
                   onClick={toggleProfileDropdown}
-                />
+                  className="flex items-center space-x-2 focus:outline-none"
+                >
+                  <img
+                    src={user.picture || "https://placehold.co/100"} // Schema ใช้ picture
+                    alt="Profile"
+                    className="h-9 w-9 rounded-full object-cover border border-gray-200"
+                  />
+                  <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[100px] truncate">{user.username}</span>
+                </button>
+                
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 top-full mt-2 bg-white/90 backdrop-blur-md rounded-xl shadow-xl w-72 py-4 border border-gray-200 z-20">
-                    <div className="flex items-center px-4 pb-3 border-b">
-                      <img
-                        src={user.pictureUrl}
-                        alt="Profile"
-                        className="h-12 w-12 rounded-full mr-3 border border-gray-300"
-                      />
-                      <div className="overflow-hidden">
-                        <h3 className="font-semibold text-gray-900 max-w-[200px] truncate">
-                          {user.username || "ผู้ใช้ไม่มีชื่อ"}
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          {user.email || "ไม่ระบุอีเมล"}
-                        </p>
-                      </div>
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                    <div className="px-4 py-3 border-b border-gray-50">
+                      <p className="text-sm font-medium text-gray-900 truncate">{user.username}</p>
+                      <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
-
-                    <ul className="text-gray-700">
-                      <li
-                        className="py-3 px-5 hover:bg-gray-50 cursor-pointer flex items-center text-red-500 font-semibold rounded-md transition"
-                        onClick={handleLogout}
-                      >
-                        ออกจากระบบ
-                      </li>
-                    </ul>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      ออกจากระบบ
+                    </button>
                   </div>
                 )}
-              </>
+              </div>
             ) : (
-              <NavLink to="/login">
-                <button className="text-gray-500 hover:text-black flex items-center text-lg font-semibold transition-all duration-500">
-                  <User size={24} className="mr-1" /> เข้าสู่ระบบ
-                </button>
+              <NavLink to="/login" className="flex items-center text-gray-600 hover:text-primary font-medium transition-colors">
+                <User size={22} className="mr-1" />
+                <span className="hidden md:inline">เข้าสู่ระบบ</span>
               </NavLink>
             )}
           </div>

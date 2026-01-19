@@ -1,201 +1,157 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { ChevronLeft, ChevronRight } from "lucide-react";
-import ProductService from "../Services/Product.service"; // เปลี่ยน import
+import { ChevronLeft, ChevronRight, ShoppingCart, Star } from "lucide-react";
+import ProductService from "../Services/Product.service";
+import ReviewService from "../Services/Review.service";
 import Layout from "../components/Layout";
 import Slideshow from "../components/Slideshow";
-import ReviewService from "../Services/Review.service";
 
-const Home = () => { // เปลี่ยนชื่อ Component ให้สื่อความหมาย (หรือใช้ BookList เหมือนเดิมก็ได้)
-  const [products, setProducts] = useState([]); // books -> products
-  const [topProducts, setTopProducts] = useState([]); // topBooks -> topProducts
-  const [topRatingProducts, setTopRatingProducts] = useState([]); // avBooks -> topRatingProducts
-  const [reviews, setReviews] = useState([]); // Review -> reviews (ตั้งชื่อตัวแปรให้เป็นพหูพจน์)
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [currentIndex2, setCurrentIndex2] = useState(0);
+const Home = () => {
+  const [products, setProducts] = useState([]);
+  const [topProducts, setTopProducts] = useState([]);
+  const [topRatingProducts, setTopRatingProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
 
   useEffect(() => {
-    // โหลดสินค้าทั้งหมด
-    ProductService.getProducts()
-      .then((response) => {
-        setProducts(response.data);
-      })
-      .catch((e) => console.log(e));
-
-    // โหลดสินค้ายอดนิยม
-    ProductService.getTopProducts(10)
-      .then((response) => {
-        setTopProducts(response.data);
-      })
-      .catch((e) => console.log(e));
-
-    // โหลดสินค้าเรตติ้งดี
-    ProductService.getTopRatingProducts(10)
-      .then((response) => {
-        setTopRatingProducts(response.data);
-      })
-      .catch((e) => console.log(e));
-
-    // โหลดรีวิว
-    ReviewService.getReview(10)
-      .then((response) => {
-        setReviews(response.data);
-      })
-      .catch((e) => console.log(e));
+    const fetchData = async () => {
+      try {
+        const [all, top, rating, rev] = await Promise.all([
+          ProductService.getProducts(),
+          ProductService.getTopProducts(10),
+          ProductService.getTopRatingProducts(10),
+          ReviewService.getReview(10)
+        ]);
+        
+        setProducts(all.data);
+        setTopProducts(top.data);
+        setTopRatingProducts(rating.data);
+        setReviews(rev.data);
+      } catch (error) {
+        console.error("Error loading data:", error);
+      }
+    };
+    fetchData();
   }, []);
 
-  // ฟังก์ชันแสดงหมวดหมู่ (สมมติว่า product มี field category อยู่แล้ว)
-  const getCategoryName = (product) => {
-    if (!product.category) return "ไม่ระบุหมวดหมู่";
-    return Array.isArray(product.category)
-      ? product.category.join(", ")
-      : product.category;
-  };
-
-  const prevSlide = () => setCurrentIndex((prev) => Math.max(prev - 5, 0));
-  const nextSlide = () => setCurrentIndex((prev) => Math.max(prev + 5, 0));
-  const prevSlide2 = () => setCurrentIndex2((prev) => Math.max(prev - 5, 0));
-  const nextSlide2 = () => setCurrentIndex2((prev) => Math.max(prev + 5, 0));
+  // Card Component สำหรับแสดงสินค้า (Reuse ได้)
+  const ProductCard = ({ product }) => (
+    <div className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 flex flex-col h-full group overflow-hidden">
+      <Link to={`/content/${product._id}`} className="relative pt-[100%] block bg-gray-50">
+        <img
+          src={product.product_image || "https://placehold.co/400"} // ใช้ default image ถ้าไม่มีรูป
+          alt={product.product_name}
+          className="absolute top-0 left-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+        />
+        {product.stock <= 0 && (
+           <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">หมด</div>
+        )}
+      </Link>
+      
+      <div className="p-4 flex flex-col flex-grow">
+        <div className="flex-grow">
+          <p className="text-xs text-gray-500 mb-1">{product.brand || "IT Brand"}</p>
+          <Link to={`/content/${product._id}`}>
+            <h3 className="font-semibold text-gray-800 line-clamp-2 hover:text-primary transition-colors h-12" title={product.product_name}>
+              {product.product_name}
+            </h3>
+          </Link>
+        </div>
+        
+        <div className="mt-4 flex items-end justify-between">
+          <div>
+            <span className="text-lg font-bold text-primary">฿{product.price?.toLocaleString()}</span>
+          </div>
+          <button className="bg-gray-100 hover:bg-primary hover:text-white p-2 rounded-lg transition-colors">
+            <ShoppingCart size={18} />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <Layout>
       <Slideshow />
-      <div className="relative w-full overflow-hidden">
-        <img src="/bg/bgtree.gif" alt="Background" className="absolute top-0 left-0 w-full h-40 object-cover" />
-        <div className="relative flex justify-center items-center w-full h-40 bg-black bg-opacity-50">
-          <h1 className="text-6xl text-white logo">Welcome To BookTree</h1>
-        </div>
+      
+      {/* Banner / Hero Section แทนรูป bgtree เดิม */}
+      <div className="bg-gradient-to-r from-secondary to-blue-900 py-12 px-4 text-center shadow-inner">
+        <h1 className="text-4xl md:text-5xl font-bold text-white mb-2">Welcome To IT Store</h1>
+        <p className="text-gray-300">ศูนย์รวมอุปกรณ์ไอที คอมพิวเตอร์ และแกดเจ็ตครบวงจร</p>
       </div>
 
-      <div className="p-6">
-        {/* สินค้าใหม่ */}
-        <div className="relative overflow-hidden w-full px-4">
-          <h1 className="text-3xl font-bold ml-5 mb-4">📚 สินค้าใหม่ รายสัปดาห์</h1>
-          <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${(currentIndex * 100) / 5}%)` }}>
-            {products.map((product) => (
-              <div key={product._id} className="w-1/5 flex-none p-2">
-                <Link to={`/content/${product._id}`}>
-                  <div className="bg-white p-3 rounded-lg shadow-lg w-auto mb-5 flex flex-col justify-between h-[500px]">
-                    <img
-                      src={product.book_photo || product.product_photo} // เช็คชื่อ field รูปภาพใน DB
-                      alt={product.title}
-                      className="w-80 h-[450px] object-cover rounded-md mb-4"
-                    />
-                    <h3 className="text-lg font-semibold text-center min-h-[48px] flex items-center justify-center">
-                      {product.title}
-                    </h3>
-                    <p className="text-sm text-center text-gray-500 h-10">
-                      {getCategoryName(product)}
-                    </p>
-                  </div>
-                </Link>
-              </div>
-            ))}
+      <div className="container mx-auto px-4 py-8 space-y-12">
+        
+        {/* Section: สินค้าใหม่ */}
+        <section>
+          <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-2">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <span className="w-1 h-8 bg-primary rounded-full block"></span>
+              สินค้าใหม่ล่าสุด
+            </h2>
+            <Link to="/all-products" className="text-sm text-primary hover:underline">ดูทั้งหมด</Link>
           </div>
-          {/* Controls omitted for brevity, use same logic as before */}
-           {currentIndex + 5 < products.length && (
-            <button onClick={nextSlide} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full"><ChevronRight size={44} /></button>
-          )}
-          {currentIndex > 0 && (
-            <button onClick={prevSlide} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full"><ChevronLeft size={44} /></button>
-          )}
-        </div>
-
-        {/* สินค้ายอดนิยม */}
-        <div className="relative overflow-hidden w-full px-4 mt-10">
-          <h1 className="text-3xl font-bold ml-5 mb-4">🔥 สินค้ายอดนิยม ตลอดกาล</h1>
-          <div className="flex transition-transform duration-500" style={{ transform: `translateX(-${(currentIndex2 * 100) / 5}%)` }}>
-            {topProducts.map((product) => (
-              <div key={product._id} className="w-1/5 flex-none p-2">
-                <Link to={`/content/${product._id}`}>
-                  <div className="bg-white p-3 rounded-lg shadow-lg flex flex-col justify-between h-[500px]">
-                    <img
-                       src={product.book_photo || product.product_photo}
-                      alt={product.title}
-                      className="w-80 h-[450px] object-cover rounded-md mb-4"
-                    />
-                    <h3 className="text-lg font-semibold text-center min-h-[48px] flex items-center justify-center">
-                      {product.title}
-                    </h3>
-                  </div>
-                </Link>
-              </div>
-            ))}
-          </div>
-           {currentIndex2 < 5 && (
-            <button onClick={nextSlide2} className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full"><ChevronRight size={44} /></button>
-          )}
-          {currentIndex2 > 0 && (
-            <button onClick={prevSlide2} className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full"><ChevronLeft size={44} /></button>
-          )}
-        </div>
-      </div>
-
-      {/* จัดอันดับ */}
-      <div className="w-full px-4 mt-10 pb-20">
-        <h1 className="text-3xl font-bold ml-10 mb-6 text-gray-800">🏆 จัดอันดับสินค้า/ผู้ใช้งาน</h1>
-        <div className="grid grid-cols-3 gap-6">
           
-          {/* Top Products List */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg flex flex-col min-h-[450px]">
-            <h2 className="text-xl font-bold text-center mb-4 text-gray-700">📖 สินค้ายอดนิยม</h2>
-            <div className="space-y-4 flex-grow">
-              {topProducts.slice(0, 5).map((product, index) => (
-                <Link to={`/content/${product._id}`} key={product._id}>
-                  <div className="flex items-center space-x-4 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                    <span className="text-lg font-semibold text-gray-700">#{index + 1}</span>
-                    <img src={product.book_photo || product.product_photo} alt={product.title} className="w-14 h-20 object-cover rounded-md shadow-md" />
-                    <div>
-                      <h3 className="text-md font-semibold text-gray-800">{product.title}</h3>
-                      <p className="text-gray-600 text-sm">{product.author}</p>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {products.slice(0, 10).map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        </section>
+
+        {/* Section: สินค้ายอดนิยม (เปลี่ยนจาก Slide เป็น Grid เพื่อความ Modern) */}
+        <section>
+           <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-2">
+            <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+              <span className="text-red-500">🔥</span>
+              สินค้ายอดนิยม
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {topProducts.slice(0, 5).map((product) => (
+              <ProductCard key={product._id} product={product} />
+            ))}
+          </div>
+        </section>
+
+        {/* จัดอันดับ Ranking (ปรับดีไซน์ให้เป็นการ์ด Modern) */}
+        <section className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 text-center">🏆 จัดอันดับประจำสัปดาห์</h2>
+          <div className="grid md:grid-cols-3 gap-8">
+            
+            {/* Top Reviews */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg text-gray-700 border-b pb-2">⭐ สินค้าคะแนนสูงสุด</h3>
+              {topRatingProducts.slice(0, 5).map((product, idx) => (
+                <Link to={`/content/${product._id}`} key={product._id} className="flex items-center gap-4 group p-2 rounded hover:bg-gray-50 transition">
+                  <span className={`text-xl font-bold w-6 ${idx < 3 ? 'text-yellow-500' : 'text-gray-400'}`}>#{idx + 1}</span>
+                  <img src={product.product_image} alt="" className="w-12 h-12 object-contain bg-white border rounded" />
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate group-hover:text-primary">{product.product_name}</p>
+                    <div className="flex items-center text-xs text-yellow-500">
+                      <Star size={12} fill="currentColor" /> 
+                      <span className="ml-1 text-gray-600">{product.averageRating?.toFixed(1) || "5.0"}</span>
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
-          </div>
 
-          {/* Top Reviewers */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg flex flex-col min-h-[450px]">
-            <h2 className="text-xl font-bold text-center mb-4 text-gray-700">👨‍💻 นักรีวิวที่มีส่วนร่วมมากที่สุด</h2>
-            <div className="space-y-4 flex-grow">
-              {reviews.slice(0, 5).map((review, index) => (
-                <div key={review.user_id} className="flex items-center space-x-4 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                  <span className="text-lg font-semibold text-gray-700">#{index + 1}</span>
-                  <img src={review.pictureUrl} alt={review.username} className="w-14 h-20 object-cover rounded-md shadow-md" />
+            {/* Top Reviewers */}
+            <div className="space-y-4">
+              <h3 className="font-semibold text-lg text-gray-700 border-b pb-2">💬 นักรีวิวสูงสุด</h3>
+              {reviews.slice(0, 5).map((review, idx) => (
+                <div key={review.user_id} className="flex items-center gap-4 p-2">
+                  <span className={`text-xl font-bold w-6 ${idx < 3 ? 'text-primary' : 'text-gray-400'}`}>#{idx + 1}</span>
+                  <img src={review.pictureUrl || review.picture} alt="" className="w-10 h-10 rounded-full object-cover border" />
                   <div>
-                    <h3 className="text-md font-semibold text-gray-800">{review.username}</h3>
-                    <p className="text-gray-600 text-sm">รีวิว {review.review_count} ครั้ง</p>
+                    <p className="text-sm font-medium text-gray-900">{review.username}</p>
+                    <p className="text-xs text-gray-500">{review.review_count} รีวิว</p>
                   </div>
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Top Rated Products */}
-          <div className="bg-white p-6 rounded-2xl shadow-lg flex flex-col min-h-[450px]">
-            <h2 className="text-xl font-bold text-center mb-4 text-gray-700">⭐ สินค้าคะแนนสูงสุด</h2>
-            <div className="space-y-4 flex-grow">
-              {topRatingProducts.slice(0, 5).map((product, index) => (
-                <Link to={`/content/${product._id}`} key={product._id}>
-                  <div className="flex items-center space-x-4 p-3 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
-                    <span className="text-lg font-semibold text-gray-700">#{index + 1}</span>
-                    <img src={product.book_photo || product.product_photo} alt={product.title} className="w-14 h-20 object-cover rounded-md shadow-md" />
-                    <div>
-                      <h3 className="text-md font-semibold text-gray-800">{product.title}</h3>
-                      <div className="flex items-center space-x-1">
-                        <span className="text-yellow-500">⭐</span>
-                        <p className="text-gray-600 text-sm font-semibold">{product.averageRating}</p>
-                        <span className="text-gray-400 text-sm">({product.totalReviews} รีวิว)</span>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-
-        </div>
+        </section>
       </div>
     </Layout>
   );

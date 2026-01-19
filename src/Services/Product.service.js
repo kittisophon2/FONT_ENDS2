@@ -20,12 +20,11 @@ const getProductById = (id) => {
   return http.get(`/products/${id}`);
 };
 
-// ดึงสินค้าตามหมวดหมู่ (เพิ่มฟังก์ชันนี้เพื่อให้หน้า Products.jsx ใช้งานได้)
+// ✅ แก้ไขส่วนนี้: ดึงสินค้าตามหมวดหมู่
 const getProductsByCategory = (categoryId) => {
-  // หมายเหตุ: คุณต้องเช็คว่า Backend มี route นี้หรือไม่ ถ้าไม่มีอาจต้องใช้ Search หรือ Filter
-  // สมมติว่าใช้ path นี้:
-  return http.get(`/categories/${categoryId}/products`); 
-  // หรือถ้า backend ใช้ search: return http.get(`/products/search/_/${categoryId}`);
+  // เรียกไปที่ path /categories/:id ตรงๆ 
+  // เพราะ Backend (Category Controller) ได้ถูกแก้ให้ส่งข้อมูล products กลับมาพร้อมกับ category แล้ว
+  return http.get(`/categories/${categoryId}`); 
 };
 
 const addReview = (product_id, user_id, rating = 5, comment) => {
@@ -38,14 +37,13 @@ const addReview = (product_id, user_id, rating = 5, comment) => {
 
   return http
     .post(
-      "/products/add-review",
-      { product_id, user_id, rating, comment }, // เปลี่ยน key เป็น product_id (ต้องตรงกับ backend)
+      "/reviews/add", // หรือ "/products/add-review" ตาม Route ที่คุณตั้งไว้ใน Backend (ตรวจสอบ route/review.route.js หรือ product.route.js)
+      { product_id, user_id, rating, comment }, 
       {
         headers: { Authorization: `Bearer ${token}` },
       }
     )
     .then((response) => {
-      console.log("📌 API Raw Response:", response);
       return response.data;
     })
     .catch((error) => {

@@ -1,30 +1,46 @@
 import React from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route } from 'react-router-dom' // ✅ ประกาศครั้งเดียวพอ
+
+// Pages
 import Home from './pages/Home'
-import Registers from './pages/Register' // หน้า Register (อาจจะซ้ำกับ Register ด้านล่าง ตรวจสอบดูนะครับ)
-// ❌ ลบอันเก่า: import Books from './pages/Books'
-import Products from './pages/Products' // ✅ เพิ่มอันใหม่ (ให้ตรงกับชื่อไฟล์ที่คุณแก้ไป)
-// import About from './pages/About'
-import Register from './pages/Register' // หน้า Register (ซ้ำกับ Registers ด้านบน)
-import Content from './pages/Content'
+import Register from './pages/Register' // ✅ ใช้ชื่อเดียว (Register)
 import Login from './pages/Login'
+import Products from './pages/Products'
+import Content from './pages/Content'
 import Cart from "./pages/Cart";
+
+// Admin Components
+import AdminRoute from "./components/AdminRoute";
+import AdminLayout from "./pages/admin/AdminLayout";
+import Dashboard from "./pages/admin/Dashboard";
 
 const App = () => {
   return (
     <BrowserRouter>
       <Routes>
+        {/* === Public Routes === */}
         <Route path="/" element={<Home />} />
-        <Route path="/registers" element={<Registers />} />
-        {/* <Route path="/about" element={<About />} /> */}
+        <Route path="/registers" element={<Register />} /> {/* ใช้ Component ตัวเดียวกัน */}
         <Route path="/register" element={<Register />} />
-        <Route path="/content/:id" element={<Content />} />
         <Route path="/login" element={<Login/>} />
-        
-        {/* ✅ เปลี่ยนจาก <Books /> เป็น <Products /> และอาจเปลี่ยน path ให้สื่อความหมายมากขึ้น */}
-        <Route path="/bookcategories/category/:category_id" element={<Products />} />
-        
+        <Route path="/content/:id" element={<Content />} />
         <Route path="/cart" element={<Cart />} />
+        
+        {/* หน้าสินค้า */}
+        <Route path="/bookcategories/category/:category_id" element={<Products />} />
+        <Route path="/products" element={<Products />} />
+
+        {/* === Admin Routes === */}
+        <Route element={<AdminRoute />}>
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Dashboard />} /> {/* /admin */}
+            <Route path="dashboard" element={<Dashboard />} /> {/* /admin/dashboard */}
+            <Route path="products" element={<div>หน้าจัดการสินค้า (สร้างเพิ่มได้)</div>} />
+            <Route path="orders" element={<div>หน้าจัดการคำสั่งซื้อ (สร้างเพิ่มได้)</div>} />
+            <Route path="users" element={<div>หน้าจัดการผู้ใช้ (สร้างเพิ่มได้)</div>} />
+          </Route>
+        </Route>
+
       </Routes>
     </BrowserRouter>
   )

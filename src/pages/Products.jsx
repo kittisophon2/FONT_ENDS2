@@ -1,105 +1,122 @@
 import React, { useEffect, useState } from "react";
-import ProductService from "../Services/Product.service";
-import CartService from "../Services/Cart.service";
+import { useParams, NavLink, useNavigate } from "react-router-dom";
+import ProductService from "../Services/Product.service"; 
+import CartService from "../Services/Cart.service"; 
 import Layout from "../components/Layout";
-import { Search, ShoppingCart } from "lucide-react";
+import { Loader2, ShoppingCart } from "lucide-react";
 
 const Products = () => {
-  const [products, setProducts] = useState([]);
-  const [searchTerm, setSearchTerm] = useState("");
+  const { category_id } = useParams();
+  const [products, setProducts] = useState([]); 
+  const [categoryName, setCategoryName] = useState("สินค้าทั้งหมด");
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchProducts();
-  }, []);
+    fetchData();
+  }, [category_id]);
 
-  const fetchProducts = async () => {
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const response = await ProductService.getAllProducts();
-      setProducts(response.data);
-    } catch (error) {
-      console.error("Error fetching products:", error);
-    }
-  };
-
-  const handleAddToCart = async (product) => {
-    // 1. ตรวจสอบ Login
-    const userStr = localStorage.getItem("user");
-    if (!userStr) {
-      alert("กรุณาเข้าสู่ระบบก่อนซื้อสินค้า");
-      window.location.href = "/login";
-      return;
-    }
-    const user = JSON.parse(userStr);
-
-    try {
-      // ⚠️ จุดสำคัญ: ต้องใช้ product.product_id (ห้ามใช้ product.id)
-      const productId = product.product_id; 
-      
-      console.log("Adding Product ID:", productId); // เช็คใน Console ต้องเป็นรหัสยาวๆ
-
-      if (!productId) {
-        alert("เกิดข้อผิดพลาด: ไม่พบรหัสสินค้า (Product ID is missing)");
-        return;
+      if (category_id) {
+        // 🟢 กรณี 1: มีหมวดหมู่ (ดึงสินค้าตามหมวด)
+        const response = await ProductService.getProductsByCategory(category_id);
+        setCategoryName(response.data.name || "หมวดหมู่สินค้า");
+        
+        // Backend ส่งมาแบบ { products: [ { product: {...} } ] }
+        // เราต้องแปลงให้เป็น Array ของ Product ล้วนๆ เพื่อให้ใช้ง่าย
+        const rawProducts = response.data.products || [];
+        const cleanProducts = rawProducts.map(item => item.product ? item.product : item);
+        setProducts(cleanProducts);
+      } else {
+        // 🔵 กรณี 2: ไม่มีหมวดหมู่ (ดึงสินค้าทั้งหมด)
+        const response = await ProductService.getProducts();
+        setCategoryName("สินค้าทั้งหมด");
+        
+        // Backend ส่งมาเป็น Array ของ Product เลย [ {...}, {...} ]
+        setProducts(response.data || []);
       }
-
-      await CartService.addToCart(user.user_id, productId, 1);
-      alert(`เพิ่ม "${product.product_name}" ลงตะกร้าแล้ว!`);
-    } catch (error) {
-      console.error("Add to cart error:", error);
-      alert("เกิดข้อผิดพลาดในการเพิ่มสินค้า");
+    } catch (e) {
+      console.error("API Error:", e);
+      setProducts([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const filteredProducts = products.filter((product) =>
-    product.product_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+
 
   return (
     <Layout>
       <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-center mb-8 text-slate-800">สินค้าทั้งหมด</h1>
-        
-        {/* Search Bar */}
-        <div className="flex justify-center mb-10">
-          <div className="relative w-full max-w-md">
-            <input
-              type="text"
-              placeholder="ค้นหาสินค้า..."
-              className="w-full pl-10 pr-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
-          </div>
-        </div>
+        <h1 className="text-3xl font-bold text-slate-800 mb-2 text-center">
+          📦 <span className="text-blue-600">{categoryName}</span>
+        </h1>
+        <div className="w-24 h-1 bg-blue-600 mx-auto rounded-full mb-8"></div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-          {filteredProducts.map((product) => (
-            <div key={product.product_id} className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition duration-300 flex flex-col h-full border border-gray-100">
-              <div className="h-48 overflow-hidden bg-gray-50 flex justify-center items-center p-4">
-                <img
-                  src={product.product_image || "https://placehold.co/300x300?text=No+Image"}
-                  alt={product.product_name}
-                  className="h-full object-contain hover:scale-105 transition duration-300"
-                />
-              </div>
-              <div className="p-4 flex flex-col flex-grow">
-                <h3 className="text-lg font-bold text-slate-800 mb-1 line-clamp-1">{product.product_name}</h3>
-                <p className="text-sm text-gray-500 mb-2">{product.brand}</p>
-                <div className="mt-auto flex justify-between items-center">
-                  <span className="text-xl font-bold text-blue-600">฿{product.price.toLocaleString()}</span>
-                  <button
-                    onClick={() => handleAddToCart(product)}
-                    className="bg-blue-600 text-white p-2 rounded-full hover:bg-blue-700 transition shadow-md flex items-center gap-2 px-4"
-                  >
-                    <ShoppingCart size={18} /> <span className="text-sm font-medium">เพิ่มใส่ตะกร้า</span>
-                  </button>
+        {loading ? (
+          <div className="flex justify-center items-center h-64">
+            <Loader2 className="animate-spin text-blue-600" size={48} />
+          </div>
+        ) : products.length > 0 ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {products.map((product) => {
+              // เนื่องจากเรา Clean Data มาแล้วใน fetchData เราใช้ตัวแปร product ตรงๆ ได้เลย
+              if (!product) return null;
+
+              return (
+                <div 
+                  key={product.product_id}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group overflow-hidden"
+                >
+                  <NavLink to={`/content/${product.product_id}`} className="relative pt-[100%] block bg-gray-50 overflow-hidden">
+                    <img
+                      src={product.product_image || "https://placehold.co/400?text=No+Image"}
+                      alt={product.product_name}
+                      className="absolute top-0 left-0 w-full h-full object-contain p-4 group-hover:scale-105 transition-transform duration-500"
+                    />
+                     {product.stock <= 0 && (
+                        <div className="absolute top-2 right-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded shadow">หมด</div>
+                     )}
+                  </NavLink>
+
+                  <div className="p-4 flex flex-col flex-grow">
+                    <div className="flex-grow">
+                        <p className="text-xs text-gray-400 mb-1">{product.brand || "Brand"}</p>
+                        <NavLink to={`/content/${product.product_id}`}>
+                            <h3 className="text-sm font-semibold text-gray-800 line-clamp-2 hover:text-blue-600 transition-colors mb-2 min-h-[40px]">
+                            {product.product_name}
+                            </h3>
+                        </NavLink>
+                    </div>
+
+                    <div className="mt-2 pt-3 border-t border-gray-100 flex items-center justify-between">
+                      <div className="flex flex-col">
+                         <span className="text-xs text-gray-500">ราคา</span>
+                         <span className="text-lg font-bold text-blue-600">฿{product.price?.toLocaleString()}</span>
+                      </div>
+                      <button 
+                        onClick={() => handleAddToCart(product)}
+                        className="p-2 bg-gray-100 text-gray-600 rounded-lg hover:bg-blue-600 hover:text-white transition-colors cursor-pointer"
+                        title="เพิ่มใส่ตะกร้า"
+                      >
+                        <ShoppingCart size={18} />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-gray-50 rounded-xl border-dashed border-2 border-gray-200">
+            <p className="text-xl text-gray-500 font-medium">🚫 ไม่พบสินค้า</p>
+            <p className="text-gray-400 text-sm mt-2">
+              {category_id ? "ในหมวดหมู่นี้ยังไม่มีสินค้า" : "ยังไม่มีสินค้าในระบบ"}
+            </p>
+          </div>
+        )}
       </div>
     </Layout>
   );

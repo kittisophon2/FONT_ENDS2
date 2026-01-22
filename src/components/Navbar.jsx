@@ -140,14 +140,14 @@ const Navbar = () => {
               <ShoppingCart size={20} className="mr-2" /> ตะกร้า
             </NavLink>
 
-            <NavLink
+            {/* <NavLink
               to="/about"
               className={({ isActive }) =>
                 `flex items-center font-medium transition-colors ${isActive ? "text-primary" : "text-gray-600 hover:text-primary"}`
               }
             >
               <Info size={20} className="mr-2" /> เกี่ยวกับเรา
-            </NavLink>
+            </NavLink> */}
           </div>
 
           {/* Search & User Section */}

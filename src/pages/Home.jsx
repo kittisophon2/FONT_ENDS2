@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight, ShoppingCart, Star, Loader2 } from "lucide-r
 import ProductService from "../Services/Product.service";
 import ReviewService from "../Services/Review.service";
 import Layout from "../components/Layout";
-import Slideshow from "../components/Slideshow";
+// import Slideshow from "../components/Slideshow";
 
 const Home = () => {
   const [products, setProducts] = useState([]);
@@ -75,7 +75,7 @@ const Home = () => {
 
   return (
     <Layout>
-      <Slideshow />
+      {/* <Slideshow /> */}
       
       {/* Banner / Hero Section */}
       <div className="bg-gradient-to-r from-slate-900 to-blue-900 py-12 px-4 text-center shadow-inner relative overflow-hidden">

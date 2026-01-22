@@ -7,10 +7,12 @@ const getCartItems = (userId) => {
 
 // เพิ่มสินค้า (ส่ง user_id และ product_id)
 const addToCart = (userId, productId, quantity = 1) => {
-  console.log("Sending to Backend:", { userId, productId, quantity }); // Debug Log
+  // Debug: ดูค่าที่ส่งไปก่อนยิง API
+  console.log("🚀 Sending to Backend:", { user_id: userId, product_id: productId, quantity }); 
+  
   return http.post("/carts/add", {
     user_id: userId,
-    product_id: productId, // ต้องเป็น String รหัสยาวๆ (ObjectId)
+    product_id: productId, // ต้องเป็น String รหัสยาวๆ (เช่น "696b...") ห้ามเป็นเลข 1
     quantity: quantity
   });
 };

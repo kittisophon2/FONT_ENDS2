@@ -1,7 +1,7 @@
 import http from "../http-common";
 
 const getReview = () => {
-  return http.get("/review");
+  return http.get("/reviews");
 };
 
 const  ReviewService = {

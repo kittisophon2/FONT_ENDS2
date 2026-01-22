@@ -13,12 +13,16 @@ const Login = () => {
     try {
       const response = await UserService.login({ email, password });
       
-      // ✅ 1. บันทึก Token
+      console.log("Login Success:", response.data); // ดู Log ว่าได้อะไรมาบ้าง
+
+      // บันทึก Token
       localStorage.setItem("token", response.data.token);
       
-      // ✅ 2. บันทึกข้อมูล User (สำคัญมากสำหรับการเช็คสิทธิ์)
+      // ✅ บันทึกข้อมูล User (รวมถึง Role) ลงเครื่อง
       if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
+      } else {
+        console.warn("Backend did not return user data! Please check backend code.");
       }
 
       navigate("/");
@@ -31,31 +35,19 @@ const Login = () => {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100">
       <div className="bg-white p-10 rounded-3xl shadow-lg w-[400px]">
-        {/* Logo Section */}
         <div className="flex flex-col items-center mb-8">
           <NavLink to="/">
-            <img
-              src="/pic/gogo.png"
-              alt="BookTrees Logo"
-              className="h-32 mb-4"
-            />
+            <img src="/pic/gogo.png" alt="BookTrees Logo" className="h-32 mb-4" />
             <h1 className="text-2xl font-bold text-gray-700">BookTrees</h1>
           </NavLink>
         </div>
 
-        {/* Login Form */}
         <form onSubmit={handleSubmit}>
           <div className="mb-5">
             <label className="block text-gray-600 mb-2">อีเมล</label>
             <div className="flex items-center border rounded-lg px-4 py-2">
               <User className="text-gray-400" size={20} />
-              <input
-                type="email"
-                placeholder="กรอกอีเมลของคุณ"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full pl-3 outline-none"
-              />
+              <input type="email" placeholder="กรอกอีเมลของคุณ" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-3 outline-none" />
             </div>
           </div>
 
@@ -63,34 +55,18 @@ const Login = () => {
             <label className="block text-gray-600 mb-2">รหัสผ่าน</label>
             <div className="flex items-center border rounded-lg px-4 py-2">
               <Lock className="text-gray-400" size={20} />
-              <input
-                type="password"
-                placeholder="กรอกรหัสผ่าน"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full pl-3 outline-none"
-              />
+              <input type="password" placeholder="กรอกรหัสผ่าน" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-3 outline-none" />
             </div>
           </div>
 
-          <button
-            type="submit"
-            className="w-full bg-[#304896] text-white py-3 rounded-full text-lg font-semibold hover:bg-blue-800 transition duration-200"
-          >
+          <button type="submit" className="w-full bg-[#304896] text-white py-3 rounded-full text-lg font-semibold hover:bg-blue-800 transition duration-200">
             เข้าสู่ระบบ
           </button>
         </form>
 
-        {/* Register Link */}
         <div className="mt-6 text-center">
           <p className="text-gray-600">
-            ยังไม่มีบัญชี?{" "}
-            <NavLink
-              to="/register"
-              className="text-blue-600 font-semibold hover:underline"
-            >
-              สร้างบัญชีใหม่
-            </NavLink>
+            ยังไม่มีบัญชี? <NavLink to="/register" className="text-blue-600 font-semibold hover:underline">สร้างบัญชีใหม่</NavLink>
           </p>
         </div>
       </div>

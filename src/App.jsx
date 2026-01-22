@@ -2,7 +2,6 @@ import React from 'react'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Home from './pages/Home'
 import Registers from './pages/Register' // หน้า Register (อาจจะซ้ำกับ Register ด้านล่าง ตรวจสอบดูนะครับ)
-import Treasury from './pages/Treasury'
 // ❌ ลบอันเก่า: import Books from './pages/Books'
 import Products from './pages/Products' // ✅ เพิ่มอันใหม่ (ให้ตรงกับชื่อไฟล์ที่คุณแก้ไป)
 import About from './pages/About'
@@ -17,7 +16,6 @@ const App = () => {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/registers" element={<Registers />} />
-        <Route path="/readings" element={<Treasury />} />
         <Route path="/about" element={<About />} />
         <Route path="/register" element={<Register />} />
         <Route path="/content/:id" element={<Content />} />

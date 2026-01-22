@@ -12,9 +12,18 @@ const Login = () => {
     e.preventDefault();
     try {
       const response = await UserService.login({ email, password });
+      
+      // ✅ 1. บันทึก Token
       localStorage.setItem("token", response.data.token);
+      
+      // ✅ 2. บันทึกข้อมูล User (สำคัญมากสำหรับการเช็คสิทธิ์)
+      if (response.data.user) {
+        localStorage.setItem("user", JSON.stringify(response.data.user));
+      }
+
       navigate("/");
     } catch (error) {
+      console.error("Login Error:", error);
       alert("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
     }
   };

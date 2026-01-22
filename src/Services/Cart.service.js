@@ -19,21 +19,16 @@ const getUserId = () => {
 
 const getCartItems = async () => {
   const userId = getUserId();
-  if (!userId) return { data: [] }; // ถ้าไม่ได้ login ให้ส่ง array ว่างกลับไปเลย กัน Error
+  // ถ้าไม่มี user login ให้ส่งค่าว่างกลับไปเลย (ไม่ error 404)
+  if (!userId) return { data: [] }; 
   
-  // ✅ แก้ไข: ใช้ /carts (มี s) ให้ตรงกับ Backend
   return http.get(`/carts/${userId}`, { headers: getAuthHeaders() });
 };
 
 const addToCart = async (product_id, quantity = 1) => {
   const userId = getUserId();
   if (!userId) throw new Error("กรุณาเข้าสู่ระบบ");
-
-  return http.post(
-    "/carts/add", 
-    { user_id: userId, product_id, quantity }, 
-    { headers: getAuthHeaders() }
-  );
+  return http.post("/carts/add", { user_id: userId, product_id, quantity }, { headers: getAuthHeaders() });
 };
 
 const removeFromCart = async (cart_item_id) => {

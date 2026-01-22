@@ -14,6 +14,9 @@ const Cart = () => {
     try {
       setLoading(true);
       const response = await CartService.getCartItems();
+      
+      console.log("Cart Data:", response.data); // ✅ ดูตรงนี้ใน Console (F12) ว่ามีข้อมูลมาไหม
+
       if (response.data && Array.isArray(response.data)) {
         setCartItems(response.data);
         calculateTotal(response.data);
@@ -33,7 +36,7 @@ const Cart = () => {
 
   const calculateTotal = (items) => {
     const total = items.reduce((sum, item) => {
-      // ✅ ใช้ Optional Chaining (?.) ป้องกันจอขาวถ้าข้อมูล product ไม่มา
+      // ✅ ใช้ Optional Chaining ป้องกัน error
       const price = item.product?.price || 0;
       return sum + (price * item.quantity);
     }, 0);
@@ -44,6 +47,7 @@ const Cart = () => {
     if (window.confirm("ลบสินค้านี้ออกจากตะกร้า?")) {
       try {
         await CartService.removeFromCart(itemId);
+        // อัปเดตหน้าจอทันที
         const updated = cartItems.filter(item => item.order_item_id !== itemId);
         setCartItems(updated);
         calculateTotal(updated);

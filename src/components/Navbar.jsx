@@ -1,34 +1,40 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Search, User, Monitor, Grid, Info, ShoppingCart, Cpu } from "lucide-react"; // เปลี่ยน icon
+import { Search, User, Monitor, Grid, Info, ShoppingCart, Cpu } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 import ProductService from "../Services/Product.service";
 import UserService from "../Services/User.service";
+import CategoryService from "../Services/Category.service"; // ✅ Import Service
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredProducts, setFilteredProducts] = useState([]); // เปลี่ยนชื่อให้สื่อความหมาย
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]); // ✅ เปลี่ยนเป็น State ว่าง
   const [user, setUser] = useState(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
-  // ข้อมูลหมวดหมู่ตัวอย่างสำหรับร้าน IT (คุณควรดึงจาก API จริงๆ ถ้าทำได้)
-  const categories = [
-    { category_id: "1", name: "Laptops & Notebooks" },
-    { category_id: "2", name: "PC Components" },
-    { category_id: "3", name: "Peripherals (Mouse/Keybaord)" },
-    { category_id: "4", name: "Monitors" },
-    { category_id: "5", name: "Accessories" },
-  ];
-
+  // ✅ 1. ดึงข้อมูลสินค้าทั้งหมดสำหรับ Search
   useEffect(() => {
     ProductService.getProducts()
       .then((response) => setProducts(response.data))
-      .catch((e) => console.log(e));
+      .catch((e) => console.log("Error fetching products:", e));
   }, []);
 
+  // ✅ 2. ดึงข้อมูลหมวดหมู่จาก Backend
+  useEffect(() => {
+    CategoryService.getCategories()
+      .then((response) => {
+        setCategories(response.data);
+      })
+      .catch((e) => {
+        console.error("Error fetching categories:", e);
+      });
+  }, []);
+
+  // ✅ 3. Logic การค้นหา
   useEffect(() => {
     if (searchTerm.trim() === "") {
       setFilteredProducts([]);
@@ -40,12 +46,13 @@ const Navbar = () => {
     setFilteredProducts(results);
   }, [searchTerm, products]);
 
+  // ✅ 4. ตรวจสอบ User Login
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        // เช็ค field id จาก token ว่าชื่อ userId หรือ user_id ให้ตรงกับ backend
+        // เช็ค field id ให้ครอบคลุมทั้ง userId และ user_id
         fetchUserData(decoded.userId || decoded.user_id); 
       } catch (error) {
         console.error("Invalid token");
@@ -77,7 +84,6 @@ const Navbar = () => {
           
           {/* Logo Section */}
           <NavLink to="/" className="flex items-center space-x-2 group">
-             {/* เปลี่ยนรูป logo เป็นของร้าน IT หรือใช้ icon แทนชั่วคราว */}
              <div className="bg-primary p-2 rounded-lg text-white">
                 <Cpu size={28} />
              </div>
@@ -94,24 +100,33 @@ const Navbar = () => {
               <button
                 className="flex items-center text-gray-600 hover:text-primary font-medium transition-colors py-2"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                onMouseEnter={() => setIsDropdownOpen(true)} // เพิ่ม MouseEnter เพื่อความสะดวก
               >
                 <Grid size={20} className="mr-2" /> หมวดหมู่สินค้า
               </button>
               
               {/* Dropdown Menu */}
-              <div className={`absolute left-0 mt-0 w-56 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 origin-top-left ${isDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible group-hover:opacity-100 group-hover:scale-100 group-hover:visible'}`}>
-                <ul className="py-2">
-                  {categories.map((category) => (
-                    <li key={category.category_id}>
-                      <NavLink
-                        to={`/bookcategories/category/${category.category_id}`} // อาจต้องเปลี่ยน path เป็น /categories/...
-                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors"
-                        onClick={() => setIsDropdownOpen(false)}
-                      >
-                        {category.name}
-                      </NavLink>
-                    </li>
-                  ))}
+              {/* แก้ไข logic การแสดงผล dropdown ให้ smooth ขึ้น */}
+              <div 
+                className={`absolute left-0 mt-0 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 origin-top-left z-50 ${isDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}
+                onMouseLeave={() => setIsDropdownOpen(false)}
+              >
+                <ul className="py-2 max-h-96 overflow-y-auto">
+                  {categories.length > 0 ? (
+                    categories.map((category) => (
+                      <li key={category.category_id}>
+                        <NavLink
+                          to={`/bookcategories/category/${category.category_id}`} 
+                          className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors border-b border-gray-50 last:border-none"
+                          onClick={() => setIsDropdownOpen(false)}
+                        >
+                          {category.name}
+                        </NavLink>
+                      </li>
+                    ))
+                  ) : (
+                    <li className="px-4 py-3 text-sm text-gray-400 text-center">กำลังโหลด...</li>
+                  )}
                 </ul>
               </div>
             </div>
@@ -153,15 +168,16 @@ const Navbar = () => {
 
               {/* Search Results */}
               {filteredProducts.length > 0 && (
-                <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-80 overflow-y-auto">
+                <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-80 overflow-y-auto z-50">
                   {filteredProducts.map((product) => (
                     <NavLink
-                      key={product._id} // Prisma ใช้ _id หรือ product_id เช็คให้ดีครับ (Schema บอก product_id map เป็น _id)
-                      to={`/content/${product._id}`}
+                      key={product.product_id} // ✅ แก้ไข: ใช้ product_id แทน _id
+                      to={`/content/${product.product_id}`} // ✅ แก้ไข path ให้ใช้ product_id
                       className="flex items-center p-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-none"
+                      onClick={() => setSearchTerm("")} // ปิดผลการค้นหาเมื่อคลิก
                     >
                       <img
-                        src={product.product_image || "https://placehold.co/100"} // ใช้ field จาก schema
+                        src={product.product_image || "https://placehold.co/100"} 
                         alt={product.product_name}
                         className="w-10 h-10 object-cover rounded-md mr-3 border"
                       />
@@ -185,7 +201,7 @@ const Navbar = () => {
                   className="flex items-center space-x-2 focus:outline-none"
                 >
                   <img
-                    src={user.picture || "https://placehold.co/100"} // Schema ใช้ picture
+                    src={user.pictureUrl || user.picture || "https://placehold.co/100"} // ✅ เพิ่ม fallback ให้ pictureUrl
                     alt="Profile"
                     className="h-9 w-9 rounded-full object-cover border border-gray-200"
                   />
@@ -193,7 +209,7 @@ const Navbar = () => {
                 </button>
                 
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95 duration-200">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95 duration-200 z-50">
                     <div className="px-4 py-3 border-b border-gray-50">
                       <p className="text-sm font-medium text-gray-900 truncate">{user.username}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>

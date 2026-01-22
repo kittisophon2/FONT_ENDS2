@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { 
   ChevronLeft, ChevronRight, Star, ShoppingCart, 
-  CreditCard, Minus, Plus, Truck, ShieldCheck, Share2 
+  CreditCard, Minus, Plus, Truck, ShieldCheck, Share2, Loader2 
 } from "lucide-react"; 
 import ProductService from "../Services/Product.service";
 import CartService from "../Services/Cart.service";
@@ -28,15 +28,17 @@ const Content = () => {
   const [newComment, setNewComment] = useState("");
   const [selectedRating, setSelectedRating] = useState(0);
 
-  // 1. Fetch Product Data
+  // 1. ดึงข้อมูลสินค้าและสินค้าแนะนำ
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         // ดึงข้อมูลสินค้าปัจจุบัน
         const productRes = await ProductService.getProductById(id);
-        setProduct(productRes.data);
-        setReviews(productRes.data.reviews || []);
+        if (productRes.data) {
+          setProduct(productRes.data);
+          setReviews(productRes.data.reviews || []);
+        }
 
         // ดึงสินค้าแนะนำ (Top Products)
         const topRes = await ProductService.getTopProducts();
@@ -50,7 +52,7 @@ const Content = () => {
     fetchData();
   }, [id]);
 
-  // 2. Fetch User Data
+  // 2. ดึงข้อมูล User (เพื่อใช้ในการ Review หรือตรวจสอบสิทธิ์)
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
@@ -72,7 +74,7 @@ const Content = () => {
     }
   };
 
-  // 3. Handle Quantity Change
+  // 3. ฟังก์ชันปรับจำนวนสินค้า
   const decreaseQty = () => {
     if (quantity > 1) setQuantity(quantity - 1);
   };
@@ -83,27 +85,33 @@ const Content = () => {
     }
   };
 
-  // 4. Add to Cart Logic
+  // 4. ฟังก์ชันเพิ่มลงตะกร้า (หัวใจหลัก)
   const handleAddToCart = async (isBuyNow = false) => {
     const token = localStorage.getItem("token");
+    
+    // ตรวจสอบ Login
     if (!token) {
       alert("กรุณาเข้าสู่ระบบก่อนซื้อสินค้า!");
       navigate("/login");
       return;
     }
 
+    // ตรวจสอบสต็อก
     if (product.stock <= 0) {
-      alert("สินค้าหมด!");
+      alert("ขออภัย สินค้าหมด!");
       return;
     }
 
     try {
       setAddingToCart(true);
+      // เรียกใช้ Service ที่คุณมีอยู่
       await CartService.addToCart(id, quantity);
       
       if (isBuyNow) {
+        // ถ้ากด "ซื้อเลย" ให้ไปหน้าตะกร้าทันที
         navigate("/cart");
       } else {
+        // ถ้ากด "ใส่ตะกร้า" ให้แจ้งเตือนเฉยๆ
         alert(`✅ เพิ่ม ${product.product_name} จำนวน ${quantity} ชิ้น ลงตะกร้าแล้ว!`);
       }
     } catch (error) {
@@ -114,11 +122,12 @@ const Content = () => {
     }
   };
 
-  // 5. Review Logic
+  // 5. ฟังก์ชันส่ง Review
   const handleAddReview = async (e) => {
     e.preventDefault();
     if (!user) {
       alert("กรุณาเข้าสู่ระบบเพื่อแสดงความคิดเห็น");
+      navigate("/login");
       return;
     }
     if (!newComment.trim() || selectedRating === 0) {
@@ -127,16 +136,16 @@ const Content = () => {
     }
 
     try {
-      const response = await ProductService.addReview(
+      await ProductService.addReview(
         id,
         user.user_id || user.userId,
         selectedRating,
         newComment
       );
 
-      // Refresh reviews locally to show instantly
+      // อัปเดต Review ทันทีโดยไม่ต้องโหลดหน้าใหม่
       const newReview = {
-        review_id: Date.now(), // Temp ID
+        review_id: Date.now(), 
         rating: selectedRating,
         comment: newComment,
         review_date: new Date().toISOString(),
@@ -158,27 +167,26 @@ const Content = () => {
   if (loading) return (
     <Layout>
       <div className="min-h-screen flex justify-center items-center">
-        <p className="text-xl text-gray-500 animate-pulse">กำลังโหลดข้อมูลสินค้า...</p>
+        <Loader2 className="animate-spin text-blue-600" size={48} />
       </div>
     </Layout>
   );
 
   if (!product) return (
     <Layout>
-       <div className="min-h-screen flex justify-center items-center">
-        <p className="text-xl text-red-500">ไม่พบสินค้านี้</p>
+       <div className="min-h-screen flex flex-col justify-center items-center text-gray-500">
+        <p className="text-xl mb-4">ไม่พบสินค้านี้</p>
+        <Link to="/" className="text-blue-600 hover:underline">กลับหน้าหลัก</Link>
       </div>
     </Layout>
   );
 
   return (
     <Layout>
-      <div className="bg-gray-50 min-h-screen pb-12">
+      <div className="bg-gray-50 min-h-screen pb-12 font-sans">
         {/* Breadcrumb */}
         <div className="container mx-auto px-4 py-4 text-sm text-gray-500">
           <Link to="/" className="hover:text-blue-600">หน้าแรก</Link> 
-          <span className="mx-2">/</span>
-          <Link to="/all-products" className="hover:text-blue-600">สินค้าทั้งหมด</Link>
           <span className="mx-2">/</span>
           <span className="text-gray-800 font-medium">{product.product_name}</span>
         </div>
@@ -188,16 +196,16 @@ const Content = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-0">
               
               {/* Left Column: Image */}
-              <div className="p-8 flex items-center justify-center bg-white border-b md:border-b-0 md:border-r border-gray-100 relative">
+              <div className="p-8 flex items-center justify-center bg-white border-b md:border-b-0 md:border-r border-gray-100 relative min-h-[400px]">
                 <img
                   src={product.product_image || "https://placehold.co/600"}
                   alt={product.product_name}
                   className="max-h-[400px] w-auto object-contain hover:scale-105 transition-transform duration-500"
                 />
                 {product.stock <= 0 && (
-                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
+                  <div className="absolute inset-0 bg-white/60 flex items-center justify-center backdrop-blur-sm">
                     <span className="bg-red-500 text-white px-6 py-2 rounded-full text-xl font-bold shadow-lg transform -rotate-12">
-                      OUT OF STOCK
+                      สินค้าหมด
                     </span>
                   </div>
                 )}
@@ -209,7 +217,7 @@ const Content = () => {
                   <span className="inline-block px-3 py-1 bg-blue-50 text-blue-600 text-xs font-bold rounded-full mb-2 uppercase tracking-wide">
                     {product.brand || "IT Brand"}
                   </span>
-                  <h1 className="text-3xl font-bold text-gray-900 leading-tight mb-2">
+                  <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">
                     {product.product_name}
                   </h1>
                   
@@ -223,33 +231,33 @@ const Content = () => {
                     <span className="text-sm text-gray-500">({reviews.length} รีวิว)</span>
                     <span className="text-gray-300">|</span>
                     <span className="text-sm text-green-600 font-medium flex items-center gap-1">
-                      <ShieldCheck size={14} /> รับประกันศูนย์ไทย
+                      <ShieldCheck size={14} /> ประกันศูนย์ไทย
                     </span>
                   </div>
                 </div>
 
-                <div className="mb-6">
+                <div className="mb-6 bg-gray-50 p-4 rounded-xl border border-gray-100">
                   <p className="text-3xl font-bold text-blue-600">฿{product.price?.toLocaleString()}</p>
-                  <p className="text-sm text-gray-400 mt-1">ราคาลวมภาษีมูลค่าเพิ่มแล้ว</p>
+                  <p className="text-xs text-gray-400 mt-1">ราคารวมภาษีมูลค่าเพิ่มแล้ว</p>
                 </div>
 
                 <div className="flex-grow space-y-6">
                   {/* Stock & Quantity */}
                   <div>
-                    <p className="text-sm font-medium text-gray-700 mb-2">จำนวน</p>
+                    <p className="text-sm font-medium text-gray-700 mb-2">จำนวนสินค้า</p>
                     <div className="flex items-center gap-4">
-                      <div className="flex items-center border border-gray-300 rounded-lg">
+                      <div className="flex items-center border border-gray-300 rounded-lg bg-white">
                         <button 
                           onClick={decreaseQty}
-                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors rounded-l-lg"
                           disabled={product.stock <= 0 || quantity <= 1}
                         >
                           <Minus size={16} />
                         </button>
-                        <span className="w-12 text-center font-medium text-gray-900">{quantity}</span>
+                        <span className="w-12 text-center font-bold text-gray-900">{quantity}</span>
                         <button 
                           onClick={increaseQty}
-                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50"
+                          className="px-3 py-2 text-gray-600 hover:bg-gray-100 disabled:opacity-50 transition-colors rounded-r-lg"
                           disabled={product.stock <= 0 || quantity >= product.stock}
                         >
                           <Plus size={16} />
@@ -262,16 +270,16 @@ const Content = () => {
                   </div>
 
                   {/* Description Snippet */}
-                  <div className="bg-gray-50 p-4 rounded-lg text-sm text-gray-600 border border-gray-100">
-                     <p className="line-clamp-3">{product.description || "รายละเอียดสินค้ากำลังปรับปรุง..."}</p>
+                  <div className="text-sm text-gray-600 line-clamp-3">
+                     {product.description || "รายละเอียดสินค้ากำลังปรับปรุง..."}
                   </div>
 
                   {/* Actions Buttons */}
-                  <div className="flex gap-3 mt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 mt-4">
                     <button
                       onClick={() => handleAddToCart(false)}
                       disabled={product.stock <= 0 || addingToCart}
-                      className="flex-1 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="flex-1 bg-white border-2 border-blue-600 text-blue-600 hover:bg-blue-50 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed h-12"
                     >
                       <ShoppingCart size={20} />
                       {addingToCart ? "กำลังเพิ่ม..." : "ใส่ตะกร้า"}
@@ -279,7 +287,7 @@ const Content = () => {
                     <button
                       onClick={() => handleAddToCart(true)}
                       disabled={product.stock <= 0}
-                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
+                      className="flex-1 bg-blue-600 text-white hover:bg-blue-700 py-3 px-6 rounded-xl font-bold transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg h-12"
                     >
                       <CreditCard size={20} />
                       ซื้อเลย
@@ -288,12 +296,12 @@ const Content = () => {
                 </div>
 
                 {/* Delivery Info */}
-                <div className="mt-6 pt-6 border-t border-gray-100 flex items-center gap-4 text-sm text-gray-500">
+                <div className="mt-6 pt-6 border-t border-gray-100 flex flex-wrap gap-4 text-sm text-gray-500">
                    <div className="flex items-center gap-2">
                       <Truck size={18} className="text-green-500" /> จัดส่งฟรีเมื่อซื้อครบ 3,000.-
                    </div>
-                   <div className="flex items-center gap-2">
-                      <Share2 size={18} className="text-blue-500" /> แชร์
+                   <div className="flex items-center gap-2 cursor-pointer hover:text-blue-600 transition">
+                      <Share2 size={18} /> แชร์สินค้า
                    </div>
                 </div>
               </div>
@@ -303,14 +311,14 @@ const Content = () => {
             <div className="border-t border-gray-200">
                <div className="p-8">
                   <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">รายละเอียดสินค้า</h3>
-                  <div className="prose max-w-none text-gray-600">
+                  <div className="prose max-w-none text-gray-600 leading-relaxed">
                     <p className="whitespace-pre-line">{product.description}</p>
                   </div>
 
                   {product.specifications && (
                     <div className="mt-8">
                       <h3 className="text-xl font-bold text-gray-800 mb-4 border-l-4 border-blue-600 pl-3">สเปคสินค้า</h3>
-                      <div className="bg-gray-50 p-6 rounded-xl border border-gray-100 whitespace-pre-line text-gray-700 font-mono text-sm">
+                      <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 whitespace-pre-line text-slate-700 font-mono text-sm">
                         {product.specifications}
                       </div>
                     </div>
@@ -332,7 +340,7 @@ const Content = () => {
                   <img
                     src={user.pictureUrl || user.picture || "https://placehold.co/100"}
                     alt={user.username}
-                    className="w-12 h-12 rounded-full object-cover border border-white shadow-sm"
+                    className="w-12 h-12 rounded-full object-cover border-2 border-white shadow-sm"
                   />
                   <div className="flex-1">
                     <p className="font-bold text-gray-900 mb-1">{user.username}</p>
@@ -348,7 +356,7 @@ const Content = () => {
                       <span className="ml-2 text-sm text-gray-500">{selectedRating > 0 ? `${selectedRating} คะแนน` : "ให้คะแนนสินค้า"}</span>
                     </div>
                     <textarea
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all"
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all resize-none"
                       rows="3"
                       placeholder="เขียนรีวิวสินค้า..."
                       value={newComment}
@@ -401,14 +409,14 @@ const Content = () => {
                   </div>
                 ))
               ) : (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-gray-400 border border-dashed border-gray-200 rounded-xl">
                   <p>ยังไม่มีความคิดเห็น เป็นคนแรกที่รีวิวสินค้านี้!</p>
                 </div>
               )}
             </div>
           </div>
 
-          {/* Related Products Carousel */}
+          {/* Related Products Section */}
           <div className="mt-12 mb-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-2">
               <span className="w-1 h-8 bg-blue-600 rounded-full block"></span>
@@ -416,12 +424,14 @@ const Content = () => {
             </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
               {relatedProducts.slice(0, 5).map((item) => (
-                <Link to={`/content/${item._id || item.product_id}`} key={item._id || item.product_id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-lg transition-all group">
+                <Link to={`/content/${item._id || item.product_id}`} key={item._id || item.product_id} className="bg-white rounded-xl border border-gray-100 p-4 hover:shadow-lg transition-all group h-full flex flex-col">
                    <div className="relative pt-[100%] mb-4 bg-gray-50 rounded-lg overflow-hidden">
                       <img src={item.product_image || item.book_photo} alt={item.product_name} className="absolute inset-0 w-full h-full object-contain p-2 group-hover:scale-110 transition-transform" />
                    </div>
-                   <h4 className="font-medium text-gray-900 line-clamp-2 text-sm h-10 mb-2 group-hover:text-blue-600">{item.product_name || item.title}</h4>
-                   <p className="text-blue-600 font-bold">฿{item.price?.toLocaleString()}</p>
+                   <h4 className="font-medium text-gray-900 line-clamp-2 text-sm mb-auto group-hover:text-blue-600" title={item.product_name}>{item.product_name || item.title}</h4>
+                   <div className="mt-2">
+                      <p className="text-blue-600 font-bold">฿{item.price?.toLocaleString()}</p>
+                   </div>
                 </Link>
               ))}
             </div>

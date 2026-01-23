@@ -10,8 +10,10 @@ import Content from './pages/Content';
 import Cart from "./pages/Cart";
 
 // Admin Components
-// ⚠️ ตรวจสอบ Path นี้ให้ดี ถ้า AdminRoute อยู่ใน pages/admin ก็ใช้ ./pages/admin/AdminRoute
-import AdminRoute from "./components/AdminRoute"; 
+// ตรวจสอบว่า AdminRoute ของคุณอยู่ที่ path ไหน (เลือกใช้ 1 บรรทัดตามจริง)
+// import AdminRoute from "./components/AdminRoute"; 
+import AdminRoute from "./pages/admin/AdminRoute"; // หรือใช้ path นี้ถ้าไฟล์อยู่ใน pages/admin
+
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ProductManage from "./pages/admin/ProductManage";
@@ -25,7 +27,6 @@ const App = () => {
         {/* Public Routes */}
         <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
-        <Route path="/registers" element={<Register />} />
         <Route path="/login" element={<Login />} />
         
         <Route path="/content/:id" element={<Content />} />
@@ -39,8 +40,11 @@ const App = () => {
             <AdminLayout />
           </AdminRoute>
         }>
+            {/* หน้าแรกของ Admin */}
             <Route index element={<Dashboard />} />
             <Route path="dashboard" element={<Dashboard />} />
+            
+            {/* เมนูต่างๆ */}
             <Route path="products" element={<ProductManage />} />
             <Route path="categories" element={<CategoryManage />} />
             <Route path="users" element={<UserManage />} />

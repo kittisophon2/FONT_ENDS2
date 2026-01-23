@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Home, Layers } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Users, LogOut, Home, UserCircle } from 'lucide-react';
 
 const AdminLayout = () => {
   const navigate = useNavigate();

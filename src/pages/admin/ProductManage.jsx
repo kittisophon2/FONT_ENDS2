@@ -120,20 +120,31 @@ const ProductManage = () => {
     }
   };
 
-  // 5. ลบสินค้า
+ // ... (import ส่วนหัวเหมือนเดิม)
+
+// ... (ภายใน Component ProductManage)
+
+  // 5. ลบสินค้า (แก้ไขฟังก์ชันนี้)
   const handleDelete = async (id) => {
-    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบสินค้านี้?")) {
+    if (window.confirm("คุณแน่ใจหรือไม่ที่จะลบสินค้านี้? ข้อมูลรีวิวและรายการในตะกร้าที่เกี่ยวข้องจะหายไปทั้งหมด!")) {
       try {
         await ProductService.deleteProduct(id);
-        setProducts(products.filter(p => p.product_id !== id));
+        
+        // อัปเดตหน้าจอโดยเอา id ที่ลบออกไป
+        setProducts((prev) => prev.filter((p) => p.product_id !== id));
+        
         alert("ลบสินค้าเรียบร้อย");
       } catch (error) {
         console.error("Delete Error:", error);
-        alert("ลบไม่สำเร็จ");
+        
+        // ✅ ดึงข้อความ Error จาก Backend มาแสดง
+        const errorMessage = error.response?.data?.error || error.message || "เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ";
+        alert(`ลบไม่สำเร็จ! \nสาเหตุ: ${errorMessage}`);
       }
     }
   };
 
+// ... (ส่วน return เหมือนเดิม)
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
       <div className="flex justify-between items-center mb-6">

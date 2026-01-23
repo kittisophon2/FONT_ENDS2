@@ -14,13 +14,12 @@ const AdminRoute = () => {
     const decoded = jwtDecode(token);
     const user = userStr ? JSON.parse(userStr) : {};
 
-    // ดึง Role จาก Token หรือ LocalStorage
+    // ดึง role จาก Token หรือ LocalStorage
     const role = decoded.role || user.role || "";
 
-    // Debug ดูค่าจริง
-    console.log("Checking Role:", role);
+    console.log("Checking Admin Access. Found role:", role);
 
-    // ✅ เงื่อนไขที่ถูกต้อง: ยอมรับทั้ง ADMIN และ SUPERADMIN (ไม่สนตัวเล็ก/ใหญ่)
+    // ✅ เงื่อนไขที่ถูกต้อง: ยอมรับทั้ง ADMIN และ SUPERADMIN
     const upperRole = role.toUpperCase();
     const isAdmin = upperRole === "ADMIN" || upperRole === "SUPERADMIN";
 

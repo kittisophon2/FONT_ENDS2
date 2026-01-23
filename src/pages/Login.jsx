@@ -13,22 +13,22 @@ const Login = () => {
     try {
       const response = await UserService.login({ email, password });
       
-      console.log("Login Success:", response.data); // ดู Log ว่าได้อะไรมาบ้าง
+      console.log("Login Success Data:", response.data);
 
-      // บันทึก Token
+      // 1. บันทึก Token
       localStorage.setItem("token", response.data.token);
       
-      // ✅ บันทึกข้อมูล User (รวมถึง Role) ลงเครื่อง
+      // 2. บันทึกข้อมูล User (สำคัญมาก!)
       if (response.data.user) {
         localStorage.setItem("user", JSON.stringify(response.data.user));
       } else {
-        console.warn("Backend did not return user data! Please check backend code.");
+        console.warn("User data missing in login response!");
       }
 
       navigate("/");
     } catch (error) {
       console.error("Login Error:", error);
-      alert("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่อีกครั้ง");
+      alert("เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่");
     }
   };
 
@@ -36,12 +36,8 @@ const Login = () => {
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-b from-blue-100 to-green-100">
       <div className="bg-white p-10 rounded-3xl shadow-lg w-[400px]">
         <div className="flex flex-col items-center mb-8">
-          <NavLink to="/">
-            <img src="/pic/gogo.png" alt="BookTrees Logo" className="h-32 mb-4" />
-            <h1 className="text-2xl font-bold text-gray-700">BookTrees</h1>
-          </NavLink>
+          <NavLink to="/"><h1 className="text-2xl font-bold text-gray-700">Register</h1></NavLink>
         </div>
-
         <form onSubmit={handleSubmit}>
           <div className="mb-5">
             <label className="block text-gray-600 mb-2">อีเมล</label>
@@ -50,7 +46,6 @@ const Login = () => {
               <input type="email" placeholder="กรอกอีเมลของคุณ" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full pl-3 outline-none" />
             </div>
           </div>
-
           <div className="mb-5">
             <label className="block text-gray-600 mb-2">รหัสผ่าน</label>
             <div className="flex items-center border rounded-lg px-4 py-2">
@@ -58,16 +53,10 @@ const Login = () => {
               <input type="password" placeholder="กรอกรหัสผ่าน" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-3 outline-none" />
             </div>
           </div>
-
-          <button type="submit" className="w-full bg-[#304896] text-white py-3 rounded-full text-lg font-semibold hover:bg-blue-800 transition duration-200">
-            เข้าสู่ระบบ
-          </button>
+          <button type="submit" className="w-full bg-[#304896] text-white py-3 rounded-full text-lg font-semibold hover:bg-blue-800 transition duration-200">เข้าสู่ระบบ</button>
         </form>
-
         <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            ยังไม่มีบัญชี? <NavLink to="/register" className="text-blue-600 font-semibold hover:underline">สร้างบัญชีใหม่</NavLink>
-          </p>
+          <p className="text-gray-600">ยังไม่มีบัญชี? <NavLink to="/register" className="text-blue-600 font-semibold hover:underline">สร้างบัญชีใหม่</NavLink></p>
         </div>
       </div>
     </div>

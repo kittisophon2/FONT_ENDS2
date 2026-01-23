@@ -4,31 +4,36 @@ import { jwtDecode } from "jwt-decode";
 
 const AdminRoute = () => {
   const token = localStorage.getItem("token");
+  const userStr = localStorage.getItem("user");
 
-  // 1. ถ้าไม่มี Token -> ไป Login
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
   try {
     const decoded = jwtDecode(token);
-    
-    // 2. ตรวจสอบ Role (ต้องแก้เงื่อนไขนี้ให้ตรงกับ Database คุณ)
-    // สมมติว่าใน Token มี field "role" หรือ "isAdmin"
-    // ถ้า Database ยังไม่มี role ให้ลองเช็คจาก email เฉพาะกิจไปก่อน เช่น admin@gmail.com
-    const isAdmin = decoded.role === "ADMIN" || decoded.email === "admin@gmail.com"; 
+    const user = userStr ? JSON.parse(userStr) : {};
+
+    // ดึง role จาก Token หรือ LocalStorage
+    const role = decoded.role || user.role || "";
+
+    console.log("Checking Admin Access. Found role:", role);
+
+    // ✅ เงื่อนไขที่ถูกต้อง: ยอมรับทั้ง ADMIN และ SUPERADMIN
+    const upperRole = role.toUpperCase();
+    const isAdmin = upperRole === "ADMIN" || upperRole === "SUPERADMIN";
 
     if (!isAdmin) {
-      alert("คุณไม่มีสิทธิ์เข้าถึงส่วนนี้!");
+      alert(`คุณไม่มีสิทธิ์เข้าถึงส่วนนี้! (สิทธิ์ของคุณคือ: "${role}")`);
       return <Navigate to="/" replace />;
     }
 
-    // 3. ถ้าเป็น Admin จริง -> อนุญาตให้เข้า (Outlet คือหน้าลูกๆ)
     return <Outlet />;
 
   } catch (error) {
-    console.error("Token Error:", error);
+    console.error("Auth Error:", error);
     localStorage.removeItem("token");
+    localStorage.removeItem("user");
     return <Navigate to="/login" replace />;
   }
 };

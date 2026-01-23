@@ -1,33 +1,43 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
-import { Search, User, Monitor, Grid, Info, ShoppingCart, Cpu } from "lucide-react";
+import { Search, User, Grid, ShoppingCart, Cpu, LogOut, ChevronDown } from "lucide-react";
 import { jwtDecode } from "jwt-decode";
 import ProductService from "../Services/Product.service";
 import UserService from "../Services/User.service";
-import CategoryService from "../Services/Category.service"; // ✅ Import Service
+import CategoryService from "../Services/Category.service";
 
 const Navbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]); // ✅ เปลี่ยนเป็น State ว่าง
+  const [categories, setCategories] = useState([]);
   const [user, setUser] = useState(null);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
   // ✅ 1. ดึงข้อมูลสินค้าทั้งหมดสำหรับ Search
   useEffect(() => {
-    ProductService.getProducts()
-      .then((response) => setProducts(response.data))
-      .catch((e) => console.log("Error fetching products:", e));
+    // ใช้ getAllProducts ตามที่แก้ใน Service ล่าสุด
+    const fetchProds = async () => {
+      try {
+        const response = await ProductService.getAllProducts();
+        if (response.data) setProducts(response.data);
+      } catch (e) {
+        console.error("Error fetching products:", e);
+      }
+    };
+    fetchProds();
   }, []);
 
   // ✅ 2. ดึงข้อมูลหมวดหมู่จาก Backend
   useEffect(() => {
     CategoryService.getCategories()
       .then((response) => {
-        setCategories(response.data);
+        // ตรวจสอบว่ามี data หรือไม่
+        if (response.data) {
+          setCategories(response.data);
+        }
       })
       .catch((e) => {
         console.error("Error fetching categories:", e);
@@ -52,10 +62,11 @@ const Navbar = () => {
     if (token) {
       try {
         const decoded = jwtDecode(token);
-        // เช็ค field id ให้ครอบคลุมทั้ง userId และ user_id
-        fetchUserData(decoded.userId || decoded.user_id); 
+        const userId = decoded.userId || decoded.user_id;
+        fetchUserData(userId); 
       } catch (error) {
         console.error("Invalid token");
+        localStorage.removeItem("token"); // ลบ Token ถ้ามันพัง
       }
     }
   }, []);
@@ -71,6 +82,7 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.removeItem("token");
+    localStorage.removeItem("user"); // ลบ user storage ด้วย
     setUser(null);
     navigate("/login");
   };
@@ -78,35 +90,34 @@ const Navbar = () => {
   const toggleProfileDropdown = () => setIsProfileDropdownOpen(!isProfileDropdownOpen);
 
   return (
-    <nav className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200 shadow-sm">
+    <nav className="bg-white/90 backdrop-blur-md sticky top-0 z-50 border-b border-gray-200 shadow-sm font-sans">
       <div className="container mx-auto px-4 lg:px-8 py-3">
         <div className="flex items-center justify-between">
           
           {/* Logo Section */}
           <NavLink to="/" className="flex items-center space-x-2 group">
-             <div className="bg-primary p-2 rounded-lg text-white">
-                <Cpu size={28} />
+             <div className="bg-blue-600 p-2 rounded-lg text-white">
+                <Cpu size={24} />
              </div>
-             <h1 className="text-2xl font-bold text-secondary tracking-tight group-hover:text-primary transition-colors">
+             <h1 className="text-2xl font-bold text-slate-800 tracking-tight group-hover:text-blue-600 transition-colors">
                IT Store
              </h1>
           </NavLink>
 
           {/* Main Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className="hidden md:flex items-center space-x-6">
             
             {/* หมวดหมู่ Dropdown */}
             <div className="relative group">
               <button
-                className="flex items-center text-gray-600 hover:text-primary font-medium transition-colors py-2"
+                className="flex items-center text-slate-600 hover:text-blue-600 font-medium transition-colors py-2"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                onMouseEnter={() => setIsDropdownOpen(true)} // เพิ่ม MouseEnter เพื่อความสะดวก
+                onMouseEnter={() => setIsDropdownOpen(true)}
               >
-                <Grid size={20} className="mr-2" /> หมวดหมู่สินค้า
+                <Grid size={18} className="mr-2" /> หมวดหมู่สินค้า
               </button>
               
               {/* Dropdown Menu */}
-              {/* แก้ไข logic การแสดงผล dropdown ให้ smooth ขึ้น */}
               <div 
                 className={`absolute left-0 mt-0 w-64 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 origin-top-left z-50 ${isDropdownOpen ? 'opacity-100 scale-100 visible' : 'opacity-0 scale-95 invisible'}`}
                 onMouseLeave={() => setIsDropdownOpen(false)}
@@ -117,10 +128,11 @@ const Navbar = () => {
                       <li key={category.category_id}>
                         <NavLink
                           to={`/bookcategories/category/${category.category_id}`} 
-                          className="block px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 hover:text-primary transition-colors border-b border-gray-50 last:border-none"
+                          className="block px-4 py-3 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors border-b border-gray-50 last:border-none"
                           onClick={() => setIsDropdownOpen(false)}
                         >
-                          {category.name}
+                          {/* ✅ แก้ไข: ใช้ category_name หรือ name ตามที่มีใน DB */}
+                          {category.category_name || category.name}
                         </NavLink>
                       </li>
                     ))
@@ -134,20 +146,11 @@ const Navbar = () => {
             <NavLink
               to="/cart"
               className={({ isActive }) =>
-                `flex items-center font-medium transition-colors ${isActive ? "text-primary" : "text-gray-600 hover:text-primary"}`
+                `flex items-center font-medium transition-colors ${isActive ? "text-blue-600" : "text-slate-600 hover:text-blue-600"}`
               }
             >
-              <ShoppingCart size={20} className="mr-2" /> ตะกร้า
+              <ShoppingCart size={18} className="mr-2" /> ตะกร้า
             </NavLink>
-
-            {/* <NavLink
-              to="/about"
-              className={({ isActive }) =>
-                `flex items-center font-medium transition-colors ${isActive ? "text-primary" : "text-gray-600 hover:text-primary"}`
-              }
-            >
-              <Info size={20} className="mr-2" /> เกี่ยวกับเรา
-            </NavLink> */}
           </div>
 
           {/* Search & User Section */}
@@ -155,7 +158,7 @@ const Navbar = () => {
             
             {/* Search Bar */}
             <div className="relative hidden lg:block">
-              <div className="flex items-center bg-gray-100 px-3 py-2 rounded-full border border-transparent focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20 transition-all w-64">
+              <div className="flex items-center bg-gray-100 px-4 py-2 rounded-full border border-transparent focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100 transition-all w-72">
                 <Search size={18} className="text-gray-400 mr-2" />
                 <input
                   type="text"
@@ -168,24 +171,24 @@ const Navbar = () => {
 
               {/* Search Results */}
               {filteredProducts.length > 0 && (
-                <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-80 overflow-y-auto z-50">
+                <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 max-h-96 overflow-y-auto z-50">
                   {filteredProducts.map((product) => (
                     <NavLink
-                      key={product.product_id} // ✅ แก้ไข: ใช้ product_id แทน _id
-                      to={`/content/${product.product_id}`} // ✅ แก้ไข path ให้ใช้ product_id
-                      className="flex items-center p-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-none"
-                      onClick={() => setSearchTerm("")} // ปิดผลการค้นหาเมื่อคลิก
+                      key={product.product_id || product.id}
+                      to={`/content/${product.product_id || product.id}`}
+                      className="flex items-center p-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-none group"
+                      onClick={() => setSearchTerm("")}
                     >
                       <img
                         src={product.product_image || "https://placehold.co/100"} 
                         alt={product.product_name}
-                        className="w-10 h-10 object-cover rounded-md mr-3 border"
+                        className="w-12 h-12 object-contain rounded-lg mr-3 border bg-white p-1"
                       />
                       <div className="overflow-hidden">
-                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                        <h3 className="text-sm font-bold text-gray-800 truncate group-hover:text-blue-600">
                           {product.product_name}
                         </h3>
-                        <p className="text-xs text-primary font-bold">฿{product.price?.toLocaleString()}</p>
+                        <p className="text-xs text-blue-600 font-bold">฿{Number(product.price).toLocaleString()}</p>
                       </div>
                     </NavLink>
                   ))}
@@ -198,34 +201,47 @@ const Navbar = () => {
               <div className="relative">
                 <button 
                   onClick={toggleProfileDropdown}
-                  className="flex items-center space-x-2 focus:outline-none"
+                  className="flex items-center space-x-2 focus:outline-none bg-gray-50 hover:bg-gray-100 py-1 px-2 rounded-full transition border border-transparent hover:border-gray-200"
                 >
                   <img
-                    src={user.pictureUrl || user.picture || "https://placehold.co/100"} // ✅ เพิ่ม fallback ให้ pictureUrl
+                    src={user.pictureUrl || user.picture || "https://placehold.co/100"}
                     alt="Profile"
-                    className="h-9 w-9 rounded-full object-cover border border-gray-200"
+                    className="h-8 w-8 rounded-full object-cover border border-gray-200"
                   />
-                  <span className="hidden md:block text-sm font-medium text-gray-700 max-w-[100px] truncate">{user.username}</span>
+                  <span className="hidden md:block text-sm font-bold text-slate-700 max-w-[100px] truncate">{user.username}</span>
+                  <ChevronDown size={14} className="text-gray-400" />
                 </button>
                 
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-1 origin-top-right animate-in fade-in zoom-in-95 duration-200 z-50">
-                    <div className="px-4 py-3 border-b border-gray-50">
-                      <p className="text-sm font-medium text-gray-900 truncate">{user.username}</p>
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-100 py-2 origin-top-right animate-in fade-in zoom-in-95 duration-200 z-50">
+                    <div className="px-4 py-3 border-b border-gray-50 mb-1">
+                      <p className="text-sm font-bold text-gray-900 truncate">{user.username}</p>
                       <p className="text-xs text-gray-500 truncate">{user.email}</p>
                     </div>
+                    
+                    {/* Admin Menu */}
+                    {(user.role === 'admin' || user.role === 'superadmin') && (
+                      <NavLink 
+                        to="/admin" 
+                        className="flex items-center px-4 py-2 text-sm text-purple-600 hover:bg-purple-50 transition-colors"
+                        onClick={() => setIsProfileDropdownOpen(false)}
+                      >
+                        <User size={16} className="mr-2" /> Admin Panel
+                      </NavLink>
+                    )}
+
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full text-left flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors mt-1"
                     >
-                      ออกจากระบบ
+                      <LogOut size={16} className="mr-2" /> ออกจากระบบ
                     </button>
                   </div>
                 )}
               </div>
             ) : (
-              <NavLink to="/login" className="flex items-center text-gray-600 hover:text-primary font-medium transition-colors">
-                <User size={22} className="mr-1" />
+              <NavLink to="/login" className="flex items-center text-slate-600 hover:text-blue-600 font-medium transition-colors bg-gray-50 hover:bg-blue-50 px-4 py-2 rounded-full">
+                <User size={18} className="mr-2" />
                 <span className="hidden md:inline">เข้าสู่ระบบ</span>
               </NavLink>
             )}

@@ -1,29 +1,46 @@
 import http from "../http-common";
 
-const get = () => {
-  return http.get("/registers");
+const getAllUsers = () => {
+  return http.get("/auth");
 };
 
-const postUser = (data) => {
-  return http.post("/registers", data, {
-    headers: { "Content-Type": "multipart/form-data" }, // สำหรับอัปโหลดรูปภาพ
-  });
+// ✅ แก้ไข: เปลี่ยน path เป็น /auth
+const getUser = (id) => {
+  return http.get(`/auth/${id}`);
+};
+
+const register = (data) => {
+  return http.post("/auth", data); // หรือ /auth/register ถ้า backend ตั้งไว้
 };
 
 const login = (data) => {
-  return http.post("/registers/login", data);
+  return http.post("/auth/login", data);
 };
 
-// New function to get user by ID
-const getUser = (id) => {
-  return http.get(`/registers/${id}`);
+const updateUser = (id, data) => {
+  return http.put(`/auth/${id}`, data, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+};
+
+const deleteUser = (id) => {
+  return http.delete(`/auth/${id}`);
+};
+
+const updateRole = (id, role) => {
+  return http.put(`/auth/role/${id}`, { role });
 };
 
 const UserService = {
-  get,
-  postUser,
+  getAllUsers,
+  getUser,
+  register,
   login,
-  getUser, // Add the new function here
+  updateUser,
+  deleteUser,
+  updateRole
 };
 
 export default UserService;

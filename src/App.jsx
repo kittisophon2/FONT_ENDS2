@@ -13,7 +13,7 @@ import Cart from "./pages/Cart";
 import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
-
+import ProductManage from "./pages/admin/ProductManage";
 const App = () => {
   return (
     <BrowserRouter>
@@ -35,7 +35,7 @@ const App = () => {
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} /> {/* /admin */}
             <Route path="dashboard" element={<Dashboard />} /> {/* /admin/dashboard */}
-            <Route path="products" element={<div>หน้าจัดการสินค้า (สร้างเพิ่มได้)</div>} />
+            <Route path="products" element={<ProductManage />} />
             <Route path="orders" element={<div>หน้าจัดการคำสั่งซื้อ (สร้างเพิ่มได้)</div>} />
             <Route path="users" element={<div>หน้าจัดการผู้ใช้ (สร้างเพิ่มได้)</div>} />
           </Route>

@@ -14,6 +14,8 @@ import AdminRoute from "./components/AdminRoute";
 import AdminLayout from "./pages/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import ProductManage from "./pages/admin/ProductManage";
+import UserManage from "./pages/admin/UserManage";
+
 const App = () => {
   return (
     <BrowserRouter>
@@ -22,10 +24,10 @@ const App = () => {
         <Route path="/" element={<Home />} />
         <Route path="/registers" element={<Register />} /> {/* ใช้ Component ตัวเดียวกัน */}
         <Route path="/register" element={<Register />} />
-        <Route path="/login" element={<Login/>} />
+        <Route path="/login" element={<Login />} />
         <Route path="/content/:id" element={<Content />} />
         <Route path="/cart" element={<Cart />} />
-        
+
         {/* หน้าสินค้า */}
         <Route path="/bookcategories/category/:category_id" element={<Products />} />
         <Route path="/products" element={<Products />} />
@@ -37,7 +39,15 @@ const App = () => {
             <Route path="dashboard" element={<Dashboard />} /> {/* /admin/dashboard */}
             <Route path="products" element={<ProductManage />} />
             <Route path="orders" element={<div>หน้าจัดการคำสั่งซื้อ (สร้างเพิ่มได้)</div>} />
-            <Route path="users" element={<div>หน้าจัดการผู้ใช้ (สร้างเพิ่มได้)</div>} />
+
+            {/* Admin Routes */}
+            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+              <Route index element={<Dashboard />} />
+              <Route path="products" element={<ProductManage />} />
+
+              {/* ✅ 2. เพิ่มบรรทัดนี้ */}
+              <Route path="users" element={<UserManage />} />
+            </Route>
           </Route>
         </Route>
 
